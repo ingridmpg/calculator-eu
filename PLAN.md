@@ -6,6 +6,10 @@ A single page where the user enters a **gross annual salary**, selects a
 European country, and sees the **net salary** for that country with a clear
 view of where the money goes (income tax, social security, other).
 
+Context: a personal MVP for a portfolio. It will be published on **Netlify**
+once v1 is ready, so code quality, the README and visual polish matter as
+much as features.
+
 ## v1 scope
 
 ### Inputs
