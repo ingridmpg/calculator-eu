@@ -66,14 +66,15 @@ Other choices:
 - Styling: plain CSS + CSS Modules, CSS variables for the colour palette.
 - Charts: hand-made SVG/CSS bars (no chart library needed for v1).
 - Tests: Vitest for the calculation functions.
+- CI: GitHub Actions runs lint, tests and build on every PR and on `main`.
 - State: React `useState` only; no state library.
 
 ## Visual design
 
 - Layout: short header → salary input → country picker → result panel → notes.
-- Typography: one readable sans-serif (e.g. Inter), tabular numbers.
-- Calm palette, one accent colour; consistent colours for net / income tax / social security.
-- Flags as emoji (no external images).
+- Typography: Schibsted Grotesk (self-hosted via Fontsource); tabular figures only in the amounts column.
+- Palette inspired by euro banknotes: green (net), blue (income tax), orange (social security).
+- Flags as emoji (no external images). Windows lacks flag emojis, so `country-flag-emoji-polyfill` loads a self-hosted flag font there only.
 - Responsive (country grid reflows; panel below on mobile, beside on desktop).
 - Light mode only. Dark mode is out of scope (decided).
 - Instant updates while typing (no "calculate" button).
@@ -90,7 +91,7 @@ Other choices:
 ## Phases
 
 - [x] **Phase 0 — Planning**: CLAUDE.md + PLAN.md
-- [ ] **Phase 1 — Scaffold & visual skeleton**: Vite + React + TS, layout and styles with mock data.
+- [x] **Phase 1 — Scaffold & visual skeleton**: Vite + React + TS, layout and styles with mock data, CI workflow.
 - [ ] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
 - [ ] **Phase 3 — Remaining countries**: added one at a time, each validated.
 - [ ] **Phase 4 — Result visualisation**: stacked bar, breakdown details.

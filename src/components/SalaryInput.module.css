@@ -1,0 +1,52 @@
+.root {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.label {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.amount {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-2);
+  border-bottom: 3px solid var(--color-ink);
+  padding-bottom: var(--space-1);
+}
+
+.amount:focus-within {
+  border-bottom-color: var(--color-focus);
+}
+
+.input {
+  /* Grow with the typed value so the € sits right after it (falls back to full width). */
+  field-sizing: content;
+  flex: 0 1 auto;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: var(--text-display);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.input:focus-visible {
+  outline: none;
+}
+
+.currency {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-ink-muted);
+}
+
+.slider {
+  width: 100%;
+  margin: var(--space-2) 0 0;
+  accent-color: var(--color-ink);
+}
