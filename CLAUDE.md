@@ -91,7 +91,8 @@ src/
 - `npm install` — install dependencies
 - `npm run dev` — start dev server
 - `npm run build` — production build to `dist/`
-- `npm test` — run calculator unit tests (Vitest)
+- `npm test` — run unit tests (Vitest)
+- `npm run lint` — lint with oxlint
 
 ## Testing
 
