@@ -13,6 +13,7 @@ export const pt = {
   },
   countries: {
     legend: 'País',
+    comingSoon: 'Em breve',
     names: {
       PT: 'Portugal',
       ES: 'Espanha',
@@ -28,7 +29,8 @@ export const pt = {
     netAnnual: 'Líquido por ano',
     netMonthly: 'Por mês (12 meses)',
     effectiveRate: 'Taxa efetiva',
-    mockNotice: 'Valores de exemplo. O cálculo real de cada país ainda está a ser preparado.',
+    taxYear: (year: number) => `Regras fiscais de ${year}.`,
+    unavailable: 'O cálculo para este país ainda está a ser preparado. Escolha Portugal para ver um resultado.',
   },
   breakdown: {
     title: 'Para onde vai o salário bruto',
@@ -45,6 +47,7 @@ export const pt = {
       'Trabalhador por conta de outrem, residente fiscal no país escolhido.',
       'Sem regimes especiais (por exemplo IRS Jovem, Lei Beckham ou a regra dos 30% nos Países Baixos).',
       'Sem imposto religioso. Impostos regionais e municipais usam uma média ou uma cidade de referência, indicada em cada país.',
+      'Imposto anual final, depois do acerto de contas, e não a retenção mensal no recibo de vencimento.',
       'Valores em euros, por ano. São estimativas simplificadas e não substituem um simulador oficial.',
     ],
   },

@@ -3,9 +3,8 @@ import { Assumptions } from './components/Assumptions.tsx'
 import { CountryPicker } from './components/CountryPicker.tsx'
 import { ResultPanel } from './components/ResultPanel.tsx'
 import { SalaryInput } from './components/SalaryInput.tsx'
-import { COUNTRIES, type CountryCode } from './data/countries/index.ts'
+import { COUNTRIES, getTaxModel, type CountryCode } from './data/countries/index.ts'
 import { strings } from './i18n/index.ts'
-import { calculateMockSalary } from './lib/mockCalculator.ts'
 import { DEFAULT_GROSS } from './lib/salary.ts'
 import styles from './App.module.css'
 
@@ -14,7 +13,6 @@ export default function App() {
   const [countryCode, setCountryCode] = useState<CountryCode>('PT')
 
   const country = COUNTRIES.find(({ code }) => code === countryCode) ?? COUNTRIES[0]
-  const result = calculateMockSalary(gross)
 
   return (
     <div className={styles.page}>
@@ -29,7 +27,7 @@ export default function App() {
           <CountryPicker selected={countryCode} onSelect={setCountryCode} />
         </div>
 
-        <ResultPanel country={country} result={result} />
+        <ResultPanel country={country} gross={gross} taxModel={getTaxModel(countryCode)} />
       </main>
 
       <footer className={styles.footer}>

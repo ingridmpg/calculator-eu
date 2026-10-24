@@ -13,6 +13,8 @@ interface BreakdownProps {
 
 export function Breakdown({ result }: BreakdownProps) {
   const t = strings.breakdown
+  // "Other taxes" only exists in some countries, so it is hidden when empty.
+  const deductions = DEDUCTIONS.filter((key) => key !== 'otherTaxes' || result.otherTaxes > 0)
 
   return (
     <div className={styles.root}>
@@ -20,11 +22,11 @@ export function Breakdown({ result }: BreakdownProps) {
 
       <dl className={styles.list}>
         <Row label={t.gross} value={formatCurrency(result.gross)} />
-        {DEDUCTIONS.map((key) => (
+        {deductions.map((key) => (
           <Row
             key={key}
             label={t[key]}
-            value={`− ${formatCurrency(result[key])}`}
+            value={formatDeduction(result[key])}
             swatchClass={styles[key]}
           />
         ))}
@@ -32,6 +34,10 @@ export function Breakdown({ result }: BreakdownProps) {
       </dl>
     </div>
   )
+}
+
+function formatDeduction(amount: number): string {
+  return amount > 0 ? `− ${formatCurrency(amount)}` : formatCurrency(0)
 }
 
 interface RowProps {
