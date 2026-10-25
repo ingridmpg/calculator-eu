@@ -117,11 +117,18 @@ Each phase is developed on its own branch and merged through its own pull reques
 |---------|-------|--------------|--------|----------------|-----|
 | PT | €30,000 | €22,139.35 | Hand calculation (1) | €22,139.35 | ✅ |
 | PT | €60,000 | €38,275.32 | Hand calculation (1); coleta €15,374.68 matches [calculapt.pt](https://calculapt.pt/irpf-pt-escaloes) | €38,275.32 | ✅ |
+| ES (Madrid) | €30,000 | €23,452 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-30000-euros) (2) | €23,451.98 | ✅ |
+| ES (Madrid) | €60,000 | €42,184 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-60000-euros) (2) | €42,183.56 | ✅ |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
 general expenses deduction. The Portal das Finanças simulator for 2026 income is only
 published in 2027, so there is no official end-to-end figure yet. Re-check then.
+
+(2) Also matches a hand calculation from the BOE / Comunidad de Madrid rules. Many
+Spanish calculators disagree with each other (e.g. they subtract the personal minimum
+from the base, or show monthly withholding), so the reference was chosen because its
+figures match the legal method to the euro.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
