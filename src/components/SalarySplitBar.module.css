@@ -1,0 +1,39 @@
+.bar {
+  display: flex;
+  /* 2px surface gap between segments instead of borders. */
+  gap: 2px;
+  height: 2.25rem;
+}
+
+.segment {
+  display: flex;
+  align-items: center;
+  min-width: 2px;
+  flex-basis: 0;
+  background: var(--part-color);
+  transition: opacity 120ms ease;
+}
+
+.segment:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.segment:last-child {
+  border-radius: 0 4px 4px 0;
+}
+
+.segment:only-child {
+  border-radius: 4px;
+}
+
+.segment[data-dimmed='true'] {
+  opacity: 0.35;
+}
+
+.label {
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+}
