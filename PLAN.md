@@ -81,18 +81,23 @@ Other choices:
 
 ## Architecture
 
-- `src/data/countries/<code>.ts`: one object per country with `code`, `name`,
-  `flag`, `currency`, `year`, `sources`, `incomeTaxBrackets`,
-  `socialSecurity` (rate, caps), `allowances` / `credits`.
-- `src/lib/calculator.ts`: generic engine (progressive brackets, social security
-  caps, deductions), plus a per-country hook when a rule doesn't fit the generic model.
+- `src/data/countries/<code>.ts`: one `CountryTaxModel` per country: `year`, `sources`
+  and a pure `computeTaxes(gross)` that returns income tax, social security and other
+  taxes. Rates and thresholds are named constants at the top of the file, each with
+  its legal reference. Tax systems differ too much (e.g. PT's minimum-existence rule)
+  for one shared data schema, so each country owns its calculation, built from shared helpers.
+- `src/data/countries/index.ts`: country list (code, flag) and the registry of
+  available tax models. A country without a model shows "Em breve".
+- `src/lib/tax.ts`: shared helpers, e.g. `progressiveTax(income, brackets)`.
+- `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` derives net, monthly
+  net and effective rate from a model's taxes.
 - `src/components/`: `SalaryInput`, `CountryPicker`, `ResultPanel`, `Breakdown`, `Assumptions`.
 
 ## Phases
 
 - [x] **Phase 0 — Planning**: CLAUDE.md + PLAN.md
 - [x] **Phase 1 — Scaffold & visual skeleton**: Vite + React + TS, layout and styles with mock data, CI workflow.
-- [ ] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
+- [x] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
 - [ ] **Phase 3 — Remaining countries**: added one at a time, each validated.
 - [ ] **Phase 4 — Result visualisation**: stacked bar, breakdown details.
 - [ ] **Phase 5 — Polish**: accessibility, notes and sources, mobile.
@@ -106,12 +111,22 @@ Each phase is developed on its own branch and merged through its own pull reques
 - Optional English UI (Portuguese stays the default).
 - More countries, non-euro currencies, 12/14 payments, shareable URL.
 
-## Validation (fill in during Phase 3)
+## Validation
 
 | Country | Gross | Expected net | Source | Calculated net | OK? |
 |---------|-------|--------------|--------|----------------|-----|
-| PT | €30,000 | | | | |
-| PT | €60,000 | | | | |
+| PT | €30,000 | €22,139.35 | Hand calculation (1) | €22,139.35 | ✅ |
+| PT | €60,000 | €38,275.32 | Hand calculation (1); coleta €15,374.68 matches [calculapt.pt](https://calculapt.pt/irpf-pt-escaloes) | €38,275.32 | ✅ |
+
+(1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
+11% social security, specific deduction max(€4,587.09, social security) and the €250
+general expenses deduction. The Portal das Finanças simulator for 2026 income is only
+published in 2027, so there is no official end-to-end figure yet. Re-check then.
+
+### Portugal — pending
+- TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
+  government decree-law. When published, update `INCOME_TAX_BRACKETS` in
+  `src/data/countries/pt.ts` and the expected values above.
 
 ## Decisions
 

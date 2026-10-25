@@ -1,4 +1,4 @@
-import { COUNTRIES, type CountryCode } from '../data/countries/index.ts'
+import { COUNTRIES, getTaxModel, type CountryCode } from '../data/countries/index.ts'
 import { strings } from '../i18n/index.ts'
 import styles from './CountryPicker.module.css'
 
@@ -28,7 +28,10 @@ export function CountryPicker({ selected, onSelect }: CountryPickerProps) {
             <span className={styles.flag} aria-hidden="true">
               {flag}
             </span>
-            <span>{t.names[code]}</span>
+            <span className={styles.name}>
+              {t.names[code]}
+              {!getTaxModel(code) && <span className={styles.comingSoon}>{t.comingSoon}</span>}
+            </span>
           </label>
         ))}
       </div>
