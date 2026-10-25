@@ -30,11 +30,12 @@ much as features.
 | Portugal | EUR | IRS brackets + 11% social security |
 | Spain | EUR | State + regional IRPF (reference: Madrid) |
 | France | EUR | Social contributions + income tax (1 part) |
-| Germany | EUR | Lohnsteuer (class I) + Soli + social insurance, no church tax |
+| Germany | EUR | Income tax (§ 32a EStG, annual assessment) + Soli + social insurance, no church tax |
 | Netherlands | EUR | Box 1 (includes national insurance) + tax credits |
 | Ireland | EUR | Income tax + USC + PRSI |
 | Italy | EUR | IRPEF + regional/municipal surcharges (reference city) + INPS |
-| Belgium | EUR | ONSS 13.07% + personal income tax + average municipal tax |
+
+Belgium moved to v2: several 2026 values (special social security contribution scale for singles, flat professional expenses cap, work bonus amounts, indexed tax-free amount after the July 2026 reform) could not be confirmed in official sources.
 
 Later: Switzerland, UK, Poland, Sweden (require currency conversion).
 
@@ -86,8 +87,8 @@ Other choices:
   taxes. Rates and thresholds are named constants at the top of the file, each with
   its legal reference. Tax systems differ too much (e.g. PT's minimum-existence rule)
   for one shared data schema, so each country owns its calculation, built from shared helpers.
-- `src/data/countries/index.ts`: country list (code, flag) and the registry of
-  available tax models. A country without a model shows "Em breve".
+- `src/data/countries/index.ts`: the country list: code, flag and tax model for each
+  country. Adding a country means adding one entry here.
 - `src/lib/tax.ts`: shared helpers, e.g. `progressiveTax(income, brackets)`.
 - `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` derives net, monthly
   net and effective rate from a model's taxes.
@@ -98,7 +99,7 @@ Other choices:
 - [x] **Phase 0 — Planning**: CLAUDE.md + PLAN.md
 - [x] **Phase 1 — Scaffold & visual skeleton**: Vite + React + TS, layout and styles with mock data, CI workflow.
 - [x] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
-- [ ] **Phase 3 — Remaining countries**: added one at a time, each validated.
+- [x] **Phase 3 — Remaining countries**: added one at a time, each validated (ES, FR, DE, NL, IE, IT; Belgium moved to v2).
 - [ ] **Phase 4 — Result visualisation**: stacked bar, breakdown details.
 - [ ] **Phase 5 — Polish**: accessibility, notes and sources, mobile.
 - [ ] **Phase 6 — README**: write the README (what it is, how to run, assumptions, sources). Last v1 phase.
@@ -109,6 +110,7 @@ Each phase is developed on its own branch and merged through its own pull reques
 ### v2 (after v1)
 - Total employer cost.
 - Optional English UI (Portuguese stays the default).
+- Belgium, once its 2026 values are officially published.
 - More countries, non-euro currencies, 12/14 payments, shareable URL.
 
 ## Validation
@@ -117,11 +119,51 @@ Each phase is developed on its own branch and merged through its own pull reques
 |---------|-------|--------------|--------|----------------|-----|
 | PT | €30,000 | €22,139.35 | Hand calculation (1) | €22,139.35 | ✅ |
 | PT | €60,000 | €38,275.32 | Hand calculation (1); coleta €15,374.68 matches [calculapt.pt](https://calculapt.pt/irpf-pt-escaloes) | €38,275.32 | ✅ |
+| ES (Madrid) | €30,000 | €23,452 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-30000-euros) (2) | €23,451.98 | ✅ |
+| ES (Madrid) | €60,000 | €42,184 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-60000-euros) (2) | €42,183.56 | ✅ |
+| FR | €30,000 | €22,960.51 | Contributions €6,252 = [salairia.com](https://salairia.com/salaire/30000-euros-brut-en-net); IR by hand (3) | €22,960.51 | ✅ |
+| FR | €60,000 | €41,148.80 | Contributions €12,446 = [salairia.com](https://salairia.com/salaire/60000-euros-brut-en-net); IR by hand (3) | €41,148.80 | ✅ |
+| DE | €30,000 | €21,227 | [devjobs.de](https://devjobs.de/brutto-netto-rechner/30000-euro-jahresbrutto-netto-steuerklasse-1), [deutschland-rechner.de](https://www.deutschland-rechner.de/brutto-netto-tabelle) (4) | €21,223 | ✅ (−€4) |
+| DE | €60,000 | €37,561 | [deutschland-rechner.de](https://www.deutschland-rechner.de/brutto-netto-tabelle) (4) | €37,551 | ✅ (−€10) |
+| NL | €56,160 | €42,191 | [belastinghelden.nl worked example](https://belastinghelden.nl/bruto-netto/rekenvoorbeeld) (5) | €42,191.50 | ✅ |
+| NL | €60,000 | €3,675/month | [nettonu.nl](https://nettonu.nl/populaire-salarissen) (5) | €3,674.46/month | ✅ |
+| NL | €30,000 | €27,754.13 | Hand calculation from Belastingdienst tables (5) | €27,754.13 | ✅ |
+| IE | €30,000 | €26,295.93 | [irishcalculators.ie](https://irishcalculators.ie/salary-after-tax/30000-after-tax/) (6) | €26,295.93 | ✅ |
+| IE | €60,000 | €44,924.68 | [irishcalculators.ie](https://irishcalculators.ie/salary-after-tax/60000-after-tax/) (6) | €44,924.68 | ✅ |
+| IT (Milan) | €30,000 | €23,425 | [stipendee.it](https://www.stipendee.it/stipendio-netto/30000-euro-lordi) (7) | €23,425.52 | ✅ |
+| IT (Milan) | €60,000 | €37,555 | [calcolonetto.it](https://www.calcolonetto.it/stipendio-netto-60k/) (7) | €37,554.66 | ✅ |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
 general expenses deduction. The Portal das Finanças simulator for 2026 income is only
 published in 2027, so there is no official end-to-end figure yet. Re-check then.
+
+(2) Also matches a hand calculation from the BOE / Comunidad de Madrid rules. Many
+Spanish calculators disagree with each other (e.g. they subtract the personal minimum
+from the base, or show monthly withholding), so the reference was chosen because its
+figures match the legal method to the euro.
+
+(3) Non-cadre, no mutuelle/prévoyance. Income tax uses the 2026 barème (latest
+published, applies to 2025 income), the 10% allowance (min €509, max €14,555) and
+the décote (€897 − 45.25% × tax). French salary simulators only show withholding at
+a chosen rate, not the final annual tax, so the tax part is a hand calculation.
+
+(4) Social security matches exactly (€6,525 at €30k). The calculators show monthly
+withholding (Lohnsteuer, class I), which rounds every month and uses a flat
+"Vorsorgepauschale". The app models the annual assessment (§ 32a EStG 2026), so a gap
+of a few euros is expected. Average health Zusatzbeitrag 2.9%, childless care surcharge.
+
+(5) No pension contributions, no deductions. Employee national insurance is part of
+the first-bracket rate, so the app shows it inside income tax and social security as
+€0. Phase 5 should explain this in a per-country note.
+
+(6) Matches to the cent: income tax with €4,000 credits, USC as "other taxes", PRSI
+weighted 9 months at 4.2% and 3 months at 4.35% (rate rise on 1 October 2026).
+
+(7) Regional (Lombardia) and municipal (Milan) surcharges match to the cent at €30k.
+Employee first insured after 1995 (INPS ceiling applies). Not modelled: the tax-free
+cash supplement up to €20,000 and the trattamento integrativo up to €15,000, so net
+pay below ~€20,000 is understated. Phase 5 should mention this in the Italy note.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
@@ -130,7 +172,8 @@ published in 2027, so there is no official end-to-end figure yet. Re-check then.
 
 ## Decisions
 
-- Countries for v1: the eight listed above (confirmed).
+- Countries for v1: the seven listed above. Belgium moved to v2 (unconfirmed 2026 values).
+- Italy: no extra result fields for the low-income cash supplements; explain them in the Italy note (Phase 5).
 - Stack: React + Vite, no Next.js (confirmed).
 - Theme: light mode only; no dark mode.
 - Language: TypeScript.
