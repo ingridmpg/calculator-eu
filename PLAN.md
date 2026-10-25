@@ -128,6 +128,8 @@ Each phase is developed on its own branch and merged through its own pull reques
 | NL | €30,000 | €27,754.13 | Hand calculation from Belastingdienst tables (5) | €27,754.13 | ✅ |
 | IE | €30,000 | €26,295.93 | [irishcalculators.ie](https://irishcalculators.ie/salary-after-tax/30000-after-tax/) (6) | €26,295.93 | ✅ |
 | IE | €60,000 | €44,924.68 | [irishcalculators.ie](https://irishcalculators.ie/salary-after-tax/60000-after-tax/) (6) | €44,924.68 | ✅ |
+| IT (Milan) | €30,000 | €23,425 | [stipendee.it](https://www.stipendee.it/stipendio-netto/30000-euro-lordi) (7) | €23,425.52 | ✅ |
+| IT (Milan) | €60,000 | €37,555 | [calcolonetto.it](https://www.calcolonetto.it/stipendio-netto-60k/) (7) | €37,554.66 | ✅ |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
@@ -155,6 +157,11 @@ the first-bracket rate, so the app shows it inside income tax and social securit
 
 (6) Matches to the cent: income tax with €4,000 credits, USC as "other taxes", PRSI
 weighted 9 months at 4.2% and 3 months at 4.35% (rate rise on 1 October 2026).
+
+(7) Regional (Lombardia) and municipal (Milan) surcharges match to the cent at €30k.
+Employee first insured after 1995 (INPS ceiling applies). Not modelled: the tax-free
+cash supplement up to €20,000 and the trattamento integrativo up to €15,000, so net
+pay below ~€20,000 is understated. Phase 5 should mention this in the Italy note.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
