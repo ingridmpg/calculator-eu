@@ -121,6 +121,8 @@ Each phase is developed on its own branch and merged through its own pull reques
 | ES (Madrid) | €60,000 | €42,184 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-60000-euros) (2) | €42,183.56 | ✅ |
 | FR | €30,000 | €22,960.51 | Contributions €6,252 = [salairia.com](https://salairia.com/salaire/30000-euros-brut-en-net); IR by hand (3) | €22,960.51 | ✅ |
 | FR | €60,000 | €41,148.80 | Contributions €12,446 = [salairia.com](https://salairia.com/salaire/60000-euros-brut-en-net); IR by hand (3) | €41,148.80 | ✅ |
+| DE | €30,000 | €21,227 | [devjobs.de](https://devjobs.de/brutto-netto-rechner/30000-euro-jahresbrutto-netto-steuerklasse-1), [deutschland-rechner.de](https://www.deutschland-rechner.de/brutto-netto-tabelle) (4) | €21,223 | ✅ (−€4) |
+| DE | €60,000 | €37,561 | [deutschland-rechner.de](https://www.deutschland-rechner.de/brutto-netto-tabelle) (4) | €37,551 | ✅ (−€10) |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
@@ -136,6 +138,11 @@ figures match the legal method to the euro.
 published, applies to 2025 income), the 10% allowance (min €509, max €14,555) and
 the décote (€897 − 45.25% × tax). French salary simulators only show withholding at
 a chosen rate, not the final annual tax, so the tax part is a hand calculation.
+
+(4) Social security matches exactly (€6,525 at €30k). The calculators show monthly
+withholding (Lohnsteuer, class I), which rounds every month and uses a flat
+"Vorsorgepauschale". The app models the annual assessment (§ 32a EStG 2026), so a gap
+of a few euros is expected. Average health Zusatzbeitrag 2.9%, childless care surcharge.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
