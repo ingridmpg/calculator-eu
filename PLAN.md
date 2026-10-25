@@ -123,6 +123,9 @@ Each phase is developed on its own branch and merged through its own pull reques
 | FR | €60,000 | €41,148.80 | Contributions €12,446 = [salairia.com](https://salairia.com/salaire/60000-euros-brut-en-net); IR by hand (3) | €41,148.80 | ✅ |
 | DE | €30,000 | €21,227 | [devjobs.de](https://devjobs.de/brutto-netto-rechner/30000-euro-jahresbrutto-netto-steuerklasse-1), [deutschland-rechner.de](https://www.deutschland-rechner.de/brutto-netto-tabelle) (4) | €21,223 | ✅ (−€4) |
 | DE | €60,000 | €37,561 | [deutschland-rechner.de](https://www.deutschland-rechner.de/brutto-netto-tabelle) (4) | €37,551 | ✅ (−€10) |
+| NL | €56,160 | €42,191 | [belastinghelden.nl worked example](https://belastinghelden.nl/bruto-netto/rekenvoorbeeld) (5) | €42,191.50 | ✅ |
+| NL | €60,000 | €3,675/month | [nettonu.nl](https://nettonu.nl/populaire-salarissen) (5) | €3,674.46/month | ✅ |
+| NL | €30,000 | €27,754.13 | Hand calculation from Belastingdienst tables (5) | €27,754.13 | ✅ |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
@@ -143,6 +146,10 @@ a chosen rate, not the final annual tax, so the tax part is a hand calculation.
 withholding (Lohnsteuer, class I), which rounds every month and uses a flat
 "Vorsorgepauschale". The app models the annual assessment (§ 32a EStG 2026), so a gap
 of a few euros is expected. Average health Zusatzbeitrag 2.9%, childless care surcharge.
+
+(5) No pension contributions, no deductions. Employee national insurance is part of
+the first-bracket rate, so the app shows it inside income tax and social security as
+€0. Phase 5 should explain this in a per-country note.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
