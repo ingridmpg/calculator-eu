@@ -100,7 +100,7 @@ Other choices:
 - [x] **Phase 1 — Scaffold & visual skeleton**: Vite + React + TS, layout and styles with mock data, CI workflow.
 - [x] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
 - [x] **Phase 3 — Remaining countries**: added one at a time, each validated (ES, FR, DE, NL, IE, IT; Belgium moved to v2).
-- [ ] **Phase 4 — Result visualisation**: stacked bar, breakdown details.
+- [x] **Phase 4 — Result visualisation**: stacked bar (palette checked with a colour-blind validator), share of gross per line, bar and list highlight each other on hover.
 - [ ] **Phase 5 — Polish**: accessibility, notes and sources, mobile.
 - [ ] **Phase 6 — README**: write the README (what it is, how to run, assumptions, sources). Last v1 phase.
 

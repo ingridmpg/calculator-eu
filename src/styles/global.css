@@ -7,10 +7,12 @@
   --color-ink-muted: #5b6b78;
   --color-line: #d5dde0;
 
+  /* Checked with the dataviz palette validator (lightness, chroma, colour-blind
+     separation and 3:1 contrast on white), in the order they appear in the bar. */
   --color-net: #3f8a5c;
   --color-income-tax: #3d72b4;
-  --color-social-security: #d9802f;
-  --color-other-taxes: #8a7aa8;
+  --color-social-security: #c97424;
+  --color-other-taxes: #8a62c4;
 
   --color-focus: #3d72b4;
 
@@ -66,6 +68,23 @@ button,
 input {
   font: inherit;
   color: inherit;
+}
+
+/* One colour per salary part, shared by the split bar and the breakdown swatches. */
+[data-part='net'] {
+  --part-color: var(--color-net);
+}
+
+[data-part='incomeTax'] {
+  --part-color: var(--color-income-tax);
+}
+
+[data-part='socialSecurity'] {
+  --part-color: var(--color-social-security);
+}
+
+[data-part='otherTaxes'] {
+  --part-color: var(--color-other-taxes);
 }
 
 :focus-visible {

@@ -1,11 +1,10 @@
+import { useState } from 'react'
 import { strings } from '../i18n/index.ts'
-import { formatCurrency } from '../lib/format.ts'
+import { getSalaryParts, type SalaryPart, type SalaryPartKey } from '../lib/breakdown.ts'
+import { formatCurrency, formatPercent } from '../lib/format.ts'
 import type { SalaryResult } from '../lib/types.ts'
+import { SalarySplitBar } from './SalarySplitBar.tsx'
 import styles from './Breakdown.module.css'
-
-type BreakdownKey = 'incomeTax' | 'socialSecurity' | 'otherTaxes'
-
-const DEDUCTIONS: readonly BreakdownKey[] = ['incomeTax', 'socialSecurity', 'otherTaxes']
 
 interface BreakdownProps {
   result: SalaryResult
@@ -13,48 +12,59 @@ interface BreakdownProps {
 
 export function Breakdown({ result }: BreakdownProps) {
   const t = strings.breakdown
-  // "Other taxes" only exists in some countries, so it is hidden when empty.
-  const deductions = DEDUCTIONS.filter((key) => key !== 'otherTaxes' || result.otherTaxes > 0)
+  const [highlighted, setHighlighted] = useState<SalaryPartKey | null>(null)
+
+  const parts = getSalaryParts(result)
+  const deductions = parts.filter(({ key }) => key !== 'net')
+  const net = parts.find(({ key }) => key === 'net')
 
   return (
     <div className={styles.root}>
       <h3 className={styles.title}>{t.title}</h3>
 
+      <SalarySplitBar parts={parts} highlighted={highlighted} onHighlight={setHighlighted} />
+
       <dl className={styles.list}>
-        <Row label={t.gross} value={formatCurrency(result.gross)} />
-        {deductions.map((key) => (
-          <Row
-            key={key}
-            label={t[key]}
-            value={formatDeduction(result[key])}
-            swatchClass={styles[key]}
-          />
+        <div className={styles.row}>
+          <dt className={styles.label}>{t.gross}</dt>
+          <dd className={styles.value}>{formatCurrency(result.gross)}</dd>
+        </div>
+        {deductions.map((part) => (
+          <PartRow key={part.key} part={part} highlighted={highlighted} onHighlight={setHighlighted} />
         ))}
-        <Row label={t.net} value={formatCurrency(result.net)} swatchClass={styles.net} isTotal />
+        {net && <PartRow part={net} highlighted={highlighted} onHighlight={setHighlighted} />}
       </dl>
     </div>
   )
 }
 
-function formatDeduction(amount: number): string {
-  return amount > 0 ? `− ${formatCurrency(amount)}` : formatCurrency(0)
+interface PartRowProps {
+  part: SalaryPart
+  highlighted: SalaryPartKey | null
+  onHighlight: (key: SalaryPartKey | null) => void
 }
 
-interface RowProps {
-  label: string
-  value: string
-  swatchClass?: string
-  isTotal?: boolean
-}
+function PartRow({ part, highlighted, onHighlight }: PartRowProps) {
+  const { key, amount, share } = part
+  const isNet = key === 'net'
+  const value = isNet || amount === 0 ? formatCurrency(amount) : `− ${formatCurrency(amount)}`
 
-function Row({ label, value, swatchClass, isTotal = false }: RowProps) {
   return (
-    <div className={isTotal ? `${styles.row} ${styles.total}` : styles.row}>
+    <div
+      className={styles.row}
+      data-total={isNet}
+      data-highlighted={highlighted === key}
+      onMouseEnter={() => onHighlight(key)}
+      onMouseLeave={() => onHighlight(null)}
+    >
       <dt className={styles.label}>
-        {swatchClass && <span className={`${styles.swatch} ${swatchClass}`} aria-hidden="true" />}
-        {label}
+        <span className={styles.swatch} data-part={key} aria-hidden="true" />
+        {strings.breakdown[key]}
       </dt>
-      <dd className={styles.value}>{value}</dd>
+      <dd className={styles.value}>
+        <span className={styles.share}>{formatPercent(share)}</span>
+        {value}
+      </dd>
     </div>
   )
 }
