@@ -1,5 +1,6 @@
 import type { CountryTaxModel } from '../../lib/types.ts'
 import { spain } from './es.ts'
+import { france } from './fr.ts'
 import { portugal } from './pt.ts'
 
 export const COUNTRIES = [
@@ -20,6 +21,7 @@ export type CountryCode = Country['code']
 const TAX_MODELS: Partial<Record<CountryCode, CountryTaxModel>> = {
   PT: portugal,
   ES: spain,
+  FR: france,
 }
 
 export function getTaxModel(code: CountryCode): CountryTaxModel | undefined {

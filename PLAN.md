@@ -119,6 +119,8 @@ Each phase is developed on its own branch and merged through its own pull reques
 | PT | €60,000 | €38,275.32 | Hand calculation (1); coleta €15,374.68 matches [calculapt.pt](https://calculapt.pt/irpf-pt-escaloes) | €38,275.32 | ✅ |
 | ES (Madrid) | €30,000 | €23,452 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-30000-euros) (2) | €23,451.98 | ✅ |
 | ES (Madrid) | €60,000 | €42,184 | [tecalculo.com](https://tecalculo.com/es/sueldo-neto-60000-euros) (2) | €42,183.56 | ✅ |
+| FR | €30,000 | €22,960.51 | Contributions €6,252 = [salairia.com](https://salairia.com/salaire/30000-euros-brut-en-net); IR by hand (3) | €22,960.51 | ✅ |
+| FR | €60,000 | €41,148.80 | Contributions €12,446 = [salairia.com](https://salairia.com/salaire/60000-euros-brut-en-net); IR by hand (3) | €41,148.80 | ✅ |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
@@ -129,6 +131,11 @@ published in 2027, so there is no official end-to-end figure yet. Re-check then.
 Spanish calculators disagree with each other (e.g. they subtract the personal minimum
 from the base, or show monthly withholding), so the reference was chosen because its
 figures match the legal method to the euro.
+
+(3) Non-cadre, no mutuelle/prévoyance. Income tax uses the 2026 barème (latest
+published, applies to 2025 income), the 10% allowance (min €509, max €14,555) and
+the décote (€897 − 45.25% × tax). French salary simulators only show withholding at
+a chosen rate, not the final annual tax, so the tax part is a hand calculation.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
