@@ -3,7 +3,7 @@ import { Assumptions } from './components/Assumptions.tsx'
 import { CountryPicker } from './components/CountryPicker.tsx'
 import { ResultPanel } from './components/ResultPanel.tsx'
 import { SalaryInput } from './components/SalaryInput.tsx'
-import { COUNTRIES, getTaxModel, type CountryCode } from './data/countries/index.ts'
+import { COUNTRIES, type CountryCode } from './data/countries/index.ts'
 import { strings } from './i18n/index.ts'
 import { DEFAULT_GROSS } from './lib/salary.ts'
 import styles from './App.module.css'
@@ -27,7 +27,7 @@ export default function App() {
           <CountryPicker selected={countryCode} onSelect={setCountryCode} />
         </div>
 
-        <ResultPanel country={country} gross={gross} taxModel={getTaxModel(countryCode)} />
+        <ResultPanel country={country} gross={gross} />
       </main>
 
       <footer className={styles.footer}>

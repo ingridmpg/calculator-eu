@@ -54,17 +54,6 @@
   pointer-events: none;
 }
 
-.name {
-  display: grid;
-  line-height: 1.25;
-}
-
-.comingSoon {
-  font-size: var(--text-sm);
-  font-weight: 400;
-  opacity: 0.7;
-}
-
 .flag {
   font-size: var(--text-lg);
   line-height: 1;

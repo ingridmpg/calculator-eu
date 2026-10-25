@@ -30,11 +30,12 @@ much as features.
 | Portugal | EUR | IRS brackets + 11% social security |
 | Spain | EUR | State + regional IRPF (reference: Madrid) |
 | France | EUR | Social contributions + income tax (1 part) |
-| Germany | EUR | Lohnsteuer (class I) + Soli + social insurance, no church tax |
+| Germany | EUR | Income tax (§ 32a EStG, annual assessment) + Soli + social insurance, no church tax |
 | Netherlands | EUR | Box 1 (includes national insurance) + tax credits |
 | Ireland | EUR | Income tax + USC + PRSI |
 | Italy | EUR | IRPEF + regional/municipal surcharges (reference city) + INPS |
-| Belgium | EUR | ONSS 13.07% + personal income tax + average municipal tax |
+
+Belgium moved to v2: several 2026 values (special social security contribution scale for singles, flat professional expenses cap, work bonus amounts, indexed tax-free amount after the July 2026 reform) could not be confirmed in official sources.
 
 Later: Switzerland, UK, Poland, Sweden (require currency conversion).
 
@@ -86,8 +87,8 @@ Other choices:
   taxes. Rates and thresholds are named constants at the top of the file, each with
   its legal reference. Tax systems differ too much (e.g. PT's minimum-existence rule)
   for one shared data schema, so each country owns its calculation, built from shared helpers.
-- `src/data/countries/index.ts`: country list (code, flag) and the registry of
-  available tax models. A country without a model shows "Em breve".
+- `src/data/countries/index.ts`: the country list: code, flag and tax model for each
+  country. Adding a country means adding one entry here.
 - `src/lib/tax.ts`: shared helpers, e.g. `progressiveTax(income, brackets)`.
 - `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` derives net, monthly
   net and effective rate from a model's taxes.
@@ -98,7 +99,7 @@ Other choices:
 - [x] **Phase 0 — Planning**: CLAUDE.md + PLAN.md
 - [x] **Phase 1 — Scaffold & visual skeleton**: Vite + React + TS, layout and styles with mock data, CI workflow.
 - [x] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
-- [ ] **Phase 3 — Remaining countries**: added one at a time, each validated.
+- [x] **Phase 3 — Remaining countries**: added one at a time, each validated (ES, FR, DE, NL, IE, IT; Belgium moved to v2).
 - [ ] **Phase 4 — Result visualisation**: stacked bar, breakdown details.
 - [ ] **Phase 5 — Polish**: accessibility, notes and sources, mobile.
 - [ ] **Phase 6 — README**: write the README (what it is, how to run, assumptions, sources). Last v1 phase.
@@ -109,6 +110,7 @@ Each phase is developed on its own branch and merged through its own pull reques
 ### v2 (after v1)
 - Total employer cost.
 - Optional English UI (Portuguese stays the default).
+- Belgium, once its 2026 values are officially published.
 - More countries, non-euro currencies, 12/14 payments, shareable URL.
 
 ## Validation
@@ -170,7 +172,8 @@ pay below ~€20,000 is understated. Phase 5 should mention this in the Italy no
 
 ## Decisions
 
-- Countries for v1: the eight listed above (confirmed).
+- Countries for v1: the seven listed above. Belgium moved to v2 (unconfirmed 2026 values).
+- Italy: no extra result fields for the low-income cash supplements; explain them in the Italy note (Phase 5).
 - Stack: React + Vite, no Next.js (confirmed).
 - Theme: light mode only; no dark mode.
 - Language: TypeScript.

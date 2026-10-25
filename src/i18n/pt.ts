@@ -13,7 +13,6 @@ export const pt = {
   },
   countries: {
     legend: 'País',
-    comingSoon: 'Em breve',
     names: {
       PT: 'Portugal',
       ES: 'Espanha',
@@ -22,7 +21,6 @@ export const pt = {
       NL: 'Países Baixos',
       IE: 'Irlanda',
       IT: 'Itália',
-      BE: 'Bélgica',
     } satisfies Record<CountryCode, string>,
   },
   result: {
@@ -30,7 +28,6 @@ export const pt = {
     netMonthly: 'Por mês (12 meses)',
     effectiveRate: 'Taxa efetiva',
     taxYear: (year: number) => `Regras fiscais de ${year}.`,
-    unavailable: 'O cálculo para este país ainda está a ser preparado. Escolha outro país para ver um resultado.',
   },
   breakdown: {
     title: 'Para onde vai o salário bruto',
