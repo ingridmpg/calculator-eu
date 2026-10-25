@@ -126,6 +126,8 @@ Each phase is developed on its own branch and merged through its own pull reques
 | NL | €56,160 | €42,191 | [belastinghelden.nl worked example](https://belastinghelden.nl/bruto-netto/rekenvoorbeeld) (5) | €42,191.50 | ✅ |
 | NL | €60,000 | €3,675/month | [nettonu.nl](https://nettonu.nl/populaire-salarissen) (5) | €3,674.46/month | ✅ |
 | NL | €30,000 | €27,754.13 | Hand calculation from Belastingdienst tables (5) | €27,754.13 | ✅ |
+| IE | €30,000 | €26,295.93 | [irishcalculators.ie](https://irishcalculators.ie/salary-after-tax/30000-after-tax/) (6) | €26,295.93 | ✅ |
+| IE | €60,000 | €44,924.68 | [irishcalculators.ie](https://irishcalculators.ie/salary-after-tax/60000-after-tax/) (6) | €44,924.68 | ✅ |
 
 (1) From the official CIRS art. 68 table (Lei 73-A/2025) with the "parcela a abater" method,
 11% social security, specific deduction max(€4,587.09, social security) and the €250
@@ -150,6 +152,9 @@ of a few euros is expected. Average health Zusatzbeitrag 2.9%, childless care su
 (5) No pension contributions, no deductions. Employee national insurance is part of
 the first-bracket rate, so the app shows it inside income tax and social security as
 €0. Phase 5 should explain this in a per-country note.
+
+(6) Matches to the cent: income tax with €4,000 credits, USC as "other taxes", PRSI
+weighted 9 months at 4.2% and 3 months at 4.35% (rate rise on 1 October 2026).
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
