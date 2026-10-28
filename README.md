@@ -4,7 +4,7 @@ A single-page calculator that turns a **gross annual salary** into **net pay** f
 European countries, and shows where the rest goes: income tax, social security and
 other taxes. The interface is in Portuguese (pt-PT).
 
-**Live demo:** coming soon on Netlify · **Code:** [github.com/ingridmpg/calculator-eu](https://github.com/ingridmpg/calculator-eu)
+**Live demo:** [calculator-eu.netlify.app](https://calculator-eu.netlify.app/) · **Code:** [github.com/ingridmpg/calculator-eu](https://github.com/ingridmpg/calculator-eu)
 
 ![Screenshot: €40,000 gross in Portugal, with the split bar and breakdown](docs/screenshot.png)
 
