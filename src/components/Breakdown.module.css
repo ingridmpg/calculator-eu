@@ -59,6 +59,15 @@
   color: var(--color-ink-muted);
 }
 
+/* On narrow phones the share moves under the amount so each row fits. */
+@media (max-width: 24rem) {
+  .value {
+    flex-direction: column-reverse;
+    align-items: flex-end;
+    gap: 0;
+  }
+}
+
 .swatch {
   width: 0.75rem;
   height: 0.75rem;

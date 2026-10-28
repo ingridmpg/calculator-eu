@@ -101,7 +101,7 @@ Other choices:
 - [x] **Phase 2 — Calculation engine**: generic progressive brackets + Portugal as the first real country, with tests.
 - [x] **Phase 3 — Remaining countries**: added one at a time, each validated (ES, FR, DE, NL, IE, IT; Belgium moved to v2).
 - [x] **Phase 4 — Result visualisation**: stacked bar (palette checked with a colour-blind validator), share of gross per line, bar and list highlight each other on hover.
-- [ ] **Phase 5 — Polish**: accessibility, notes and sources, mobile.
+- [x] **Phase 5 — Polish**: per-country notes and sources (collapsible), slider announces the amount in euros, heading order, no horizontal scroll down to 320px.
 - [ ] **Phase 6 — README**: write the README (what it is, how to run, assumptions, sources). Last v1 phase.
 
 Each phase is developed on its own branch and merged through its own pull request
@@ -155,7 +155,7 @@ of a few euros is expected. Average health Zusatzbeitrag 2.9%, childless care su
 
 (5) No pension contributions, no deductions. Employee national insurance is part of
 the first-bracket rate, so the app shows it inside income tax and social security as
-€0. Phase 5 should explain this in a per-country note.
+€0. Explained in the Netherlands note.
 
 (6) Matches to the cent: income tax with €4,000 credits, USC as "other taxes", PRSI
 weighted 9 months at 4.2% and 3 months at 4.35% (rate rise on 1 October 2026).
@@ -163,7 +163,7 @@ weighted 9 months at 4.2% and 3 months at 4.35% (rate rise on 1 October 2026).
 (7) Regional (Lombardia) and municipal (Milan) surcharges match to the cent at €30k.
 Employee first insured after 1995 (INPS ceiling applies). Not modelled: the tax-free
 cash supplement up to €20,000 and the trattamento integrativo up to €15,000, so net
-pay below ~€20,000 is understated. Phase 5 should mention this in the Italy note.
+pay below ~€20,000 is understated. Explained in the Italy note.
 
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a

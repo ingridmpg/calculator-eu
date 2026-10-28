@@ -1,6 +1,6 @@
 import { useId } from 'react'
 import { strings } from '../i18n/index.ts'
-import { formatNumber } from '../lib/format.ts'
+import { formatCurrency, formatNumber } from '../lib/format.ts'
 import { parseSalary, SLIDER_RANGE } from '../lib/salary.ts'
 import styles from './SalaryInput.module.css'
 
@@ -39,6 +39,7 @@ export function SalaryInput({ value, onChange }: SalaryInputProps) {
         className={styles.slider}
         type="range"
         aria-label={t.sliderLabel}
+        aria-valuetext={formatCurrency(value)}
         min={SLIDER_RANGE.min}
         max={SLIDER_RANGE.max}
         step={SLIDER_RANGE.step}

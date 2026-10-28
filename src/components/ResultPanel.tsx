@@ -3,6 +3,7 @@ import { strings } from '../i18n/index.ts'
 import { calculateSalary } from '../lib/calculator.ts'
 import { formatCurrency, formatPercent } from '../lib/format.ts'
 import { Breakdown } from './Breakdown.tsx'
+import { CountryNotes } from './CountryNotes.tsx'
 import styles from './ResultPanel.module.css'
 
 interface ResultPanelProps {
@@ -20,7 +21,7 @@ export function ResultPanel({ country, gross }: ResultPanelProps) {
         <span aria-hidden="true">{country.flag}</span> {strings.countries.names[country.code]}
       </h2>
 
-      <div className={styles.headline} aria-live="polite">
+      <div className={styles.headline} aria-live="polite" aria-atomic="true">
         <p className={styles.label}>{t.netAnnual}</p>
         <p className={styles.net}>{formatCurrency(result.net)}</p>
       </div>
@@ -39,6 +40,8 @@ export function ResultPanel({ country, gross }: ResultPanelProps) {
       <Breakdown result={result} />
 
       <p className={styles.notice}>{t.taxYear(country.taxModel.year)}</p>
+
+      <CountryNotes country={country} />
     </section>
   )
 }
