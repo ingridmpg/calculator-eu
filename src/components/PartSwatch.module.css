@@ -1,0 +1,7 @@
+.swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+  background: var(--part-color);
+}

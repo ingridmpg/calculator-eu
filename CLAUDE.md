@@ -74,9 +74,10 @@ src/
 - Amounts in **EUR**. Non-euro countries (later phase) convert with a fixed
   rate documented in their data file, with the rate's date.
 - Format numbers with `Intl.NumberFormat` using the `pt-PT` locale.
-- Calculation functions are **pure**: `(grossAnnual, countryRules) => result`,
-  where `result` has `gross`, `incomeTax`, `socialSecurity`, `otherTaxes`,
-  `net`, `netMonthly`, `effectiveRate`.
+- Calculation functions are **pure**. A country model's `computeTaxes(gross)` returns
+  its calculation as steps (see `src/lib/trace.ts`); `calculateSalary(gross, taxModel)`
+  derives every amount from those steps and returns `gross`, `incomeTax`,
+  `socialSecurity`, `otherTaxes`, `net`, `netMonthly`, `effectiveRate` and the `trace`.
 - Every country's rules include `year` and `sources` (official or reliable URLs).
 - Styling with plain CSS / CSS Modules; no UI framework unless agreed.
 

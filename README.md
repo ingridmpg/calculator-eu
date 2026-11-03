@@ -13,6 +13,7 @@ other taxes. The interface is in Portuguese (pt-PT).
 - Type a gross annual salary (or drag the slider) and pick a country. The result updates as you type.
 - See the net annual and monthly amount, the effective tax rate, and a bar that splits the gross salary into its parts.
 - Each line of the breakdown shows its share of gross. Hovering the bar highlights the matching line, and vice versa.
+- "Como foi calculado" shows each step: deductions, taxable income, tax from the scale and credits.
 - "Notas e fontes" lists each country's special cases and links to the official sources behind the numbers.
 
 ## Countries
@@ -56,9 +57,11 @@ All calculations run in the browser; there is no backend.
 ```
 src/
   data/countries/   one file per country: rates, thresholds and a pure computeTaxes(gross)
+                    that returns the calculation step by step
   lib/              calculateSalary(), progressiveTax(), formatting, salary parts
   i18n/             every UI string (pt-PT), ready for an English version
-  components/       SalaryInput, CountryPicker, ResultPanel, SalarySplitBar, Breakdown, CountryNotes
+  components/       SalaryInput, CountryPicker, ResultPanel, SalarySplitBar, Breakdown,
+                    CalculationTrace, CountryNotes
   styles/           global CSS tokens; components use CSS Modules
 ```
 
@@ -66,8 +69,10 @@ src/
   minimum-existence rule, Ireland's PRSI credit, Italy's local surcharges). So each country
   owns a small pure function built from shared helpers. Every rate is a named constant with
   its legal reference.
-- **Pure functions.** `calculateSalary(gross, taxModel)` returns gross, income tax, social
-  security, other taxes, net, monthly net and effective rate. That makes each country easy to test.
+- **Pure functions.** Each country returns its calculation as a list of steps, and
+  `calculateSalary(gross, taxModel)` derives every amount from them, so the on-screen
+  explanation always matches the result. It returns gross, income tax, social security,
+  other taxes, net, monthly net, effective rate and the steps. That makes each country easy to test.
 - **Adding a country** means one data file, one test file and one entry in `src/data/countries/index.ts`.
 
 ## Tech stack

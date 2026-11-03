@@ -3,6 +3,7 @@ import { strings } from '../i18n/index.ts'
 import { calculateSalary } from '../lib/calculator.ts'
 import { formatCurrency, formatPercent } from '../lib/format.ts'
 import { Breakdown } from './Breakdown.tsx'
+import { CalculationTrace } from './CalculationTrace.tsx'
 import { CountryNotes } from './CountryNotes.tsx'
 import styles from './ResultPanel.module.css'
 
@@ -41,7 +42,10 @@ export function ResultPanel({ country, gross }: ResultPanelProps) {
 
       <p className={styles.notice}>{t.taxYear(country.taxModel.year)}</p>
 
-      <CountryNotes country={country} />
+      <div>
+        <CalculationTrace result={result} />
+        <CountryNotes country={country} />
+      </div>
     </section>
   )
 }

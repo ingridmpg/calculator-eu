@@ -3,6 +3,7 @@ import { strings } from '../i18n/index.ts'
 import { getSalaryParts, type SalaryPart, type SalaryPartKey } from '../lib/breakdown.ts'
 import { formatCurrency, formatPercent } from '../lib/format.ts'
 import type { SalaryResult } from '../lib/types.ts'
+import { PartSwatch } from './PartSwatch.tsx'
 import { SalarySplitBar } from './SalarySplitBar.tsx'
 import styles from './Breakdown.module.css'
 
@@ -58,7 +59,7 @@ function PartRow({ part, highlighted, onHighlight }: PartRowProps) {
       onMouseLeave={() => onHighlight(null)}
     >
       <dt className={styles.label}>
-        <span className={styles.swatch} data-part={key} aria-hidden="true" />
+        <PartSwatch part={key} />
         {strings.breakdown[key]}
       </dt>
       <dd className={styles.value}>

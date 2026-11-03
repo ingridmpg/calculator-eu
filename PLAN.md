@@ -83,16 +83,21 @@ Other choices:
 ## Architecture
 
 - `src/data/countries/<code>.ts`: one `CountryTaxModel` per country: `year`, `sources`
-  and a pure `computeTaxes(gross)` that returns income tax, social security and other
-  taxes. Rates and thresholds are named constants at the top of the file, each with
+  and a pure `computeTaxes(gross)` that returns the calculation as sections (income tax,
+  social security, other taxes), each a list of steps: base amounts, deductions,
+  subtotals, tax from the scale and credits. Rates and thresholds are named constants at the top of the file, each with
   its legal reference. Tax systems differ too much (e.g. PT's minimum-existence rule)
   for one shared data schema, so each country owns its calculation, built from shared helpers.
 - `src/data/countries/index.ts`: the country list: code, flag and tax model for each
   country. Adding a country means adding one entry here.
 - `src/lib/tax.ts`: shared helpers, e.g. `progressiveTax(income, brackets)`.
-- `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` derives net, monthly
-  net and effective rate from a model's taxes.
-- `src/components/`: `SalaryInput`, `CountryPicker`, `ResultPanel`, `Breakdown`, `Assumptions`.
+- `src/lib/trace.ts`: step builders (`step.base`, `step.subtract`, ...) and `sectionTotal`,
+  which replays a section's steps.
+- `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` takes every amount from
+  the trace (so the explanation always matches the result) and derives net, monthly
+  net and effective rate.
+- `src/components/`: `SalaryInput`, `CountryPicker`, `ResultPanel`, `Breakdown`, `CalculationTrace`,
+  `CountryNotes`, `Assumptions`, plus the small shared `Disclosure` and `PartSwatch`.
 
 ## Phases
 
@@ -108,17 +113,27 @@ Each phase is developed on its own branch and merged through its own pull reques
 (see "Git workflow" in CLAUDE.md).
 
 ### v2 (after v1)
-- Total employer cost.
-- Optional English UI (Portuguese stays the default).
-- Belgium, once its 2026 values are officially published.
-- More countries, non-euro currencies, 12/14 payments, shareable URL.
-- **Taxpayer profiles** (see below).
-- **Calculation trace per country**: each model also returns its intermediate
-  steps (taxable base, deductions, credits, each bracket), so the UI can show
-  "how this was calculated" and the v3 assistant can explain a result step by step.
-- **Structured notes and sources**: notes become data (per country, with the rule
-  and its source) instead of free text only, so they can be shown in the UI and
-  indexed by the v3 assistant.
+
+Same workflow as v1: one branch and one PR per phase, confirmed with the user before
+the next one.
+
+- [x] **Phase 7 — Calculation trace**: each country model returns its calculation as
+  steps (taxable base, deductions, subtotals, tax from the scale, credits) and the
+  amounts are derived from those steps. The panel shows them under "Como foi calculado".
+  Brackets are not listed one by one: the trace shows the tax from the whole scale.
+- [ ] **Phase 8 — Structured notes and sources**: notes become data (per country, with
+  the rule and its source) instead of free text only, so they can be shown in the UI
+  and indexed by the v3 assistant.
+- [ ] **Phase 9 — Total employer cost**: employer contributions per country, shown with
+  the result.
+- [ ] **Phase 10 — Taxpayer profiles** (see below), one country at a time with a pause
+  after each, as in Phase 3.
+- [ ] **Phase 11 — Belgium**, once its 2026 values are confirmed, with all three profiles.
+- [ ] **Phase 12 — English UI**: a second language for the strings, with a switch.
+  Portuguese stays the default.
+- [ ] **Phase 13 — Extras**: shareable URL, 12 vs 14 monthly payments.
+
+After v2: more countries and non-euro currencies.
 
 #### Taxpayer profiles (v2)
 

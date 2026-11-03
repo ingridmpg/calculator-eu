@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // France: single employee (non-cadre), one tax part (1 part de quotient familial).
 // Social contributions use 2026 rates. Income tax uses the latest published scale,
@@ -70,24 +71,14 @@ function socialContributions(gross: number) {
   const csgCrdsBase = progressiveTax(gross, CSG_CRDS_BASE_BRACKETS)
   const cet = gross > PASS ? Math.min(gross, 8 * PASS) * CET_RATE : 0
 
-  const deductible =
-    progressiveTax(gross, CAPPED_PENSION_BRACKETS) +
-    gross * UNCAPPED_PENSION_RATE +
-    cet +
-    csgCrdsBase * CSG_DEDUCTIBLE_RATE
+  const pension = progressiveTax(gross, CAPPED_PENSION_BRACKETS) + gross * UNCAPPED_PENSION_RATE + cet
+  const deductibleCsg = csgCrdsBase * CSG_DEDUCTIBLE_RATE
   const nonDeductible = csgCrdsBase * (CSG_NON_DEDUCTIBLE_RATE + CRDS_RATE)
 
-  return { deductible, total: deductible + nonDeductible }
+  return { pension, deductibleCsg, nonDeductible, deductible: pension + deductibleCsg }
 }
 
-function incomeTaxAfterDecote(taxableIncome: number): number {
-  const grossTax = progressiveTax(taxableIncome, INCOME_TAX_BRACKETS)
-  const decote = Math.max(DECOTE_BASE - DECOTE_RATE * grossTax, 0)
-  const tax = Math.max(grossTax - decote, 0)
-  return tax < MIN_COLLECTED_TAX ? 0 : tax
-}
-
-function computeTaxes(gross: number): TaxComponents {
+function computeTaxes(gross: number): TaxSection[] {
   const contributions = socialContributions(gross)
 
   const netTaxableSalary = Math.max(gross - contributions.deductible, 0)
@@ -98,11 +89,38 @@ function computeTaxes(gross: number): TaxComponents {
   )
   const taxableIncome = netTaxableSalary - expensesAllowance
 
-  return {
-    incomeTax: incomeTaxAfterDecote(taxableIncome),
-    socialSecurity: contributions.total,
-    otherTaxes: progressiveTax(taxableIncome, HIGH_INCOME_BRACKETS),
-  }
+  const taxFromScale = progressiveTax(taxableIncome, INCOME_TAX_BRACKETS)
+  // The décote can cancel the tax but never makes it negative.
+  const decote = Math.min(Math.max(DECOTE_BASE - DECOTE_RATE * taxFromScale, 0), taxFromScale)
+  const taxAfterDecote = taxFromScale - decote
+
+  return [
+    {
+      part: 'socialSecurity',
+      steps: [
+        step.base('pensionContributions', contributions.pension),
+        step.add('deductibleCsg', contributions.deductibleCsg),
+        step.add('nonDeductibleCsgCrds', contributions.nonDeductible),
+      ],
+    },
+    {
+      part: 'incomeTax',
+      steps: [
+        step.base('gross', gross),
+        step.subtract('deductibleContributions', contributions.deductible),
+        step.subtotal('netTaxableSalary', netTaxableSalary),
+        step.subtract('expensesAllowance', expensesAllowance),
+        step.subtotal('taxableIncome', taxableIncome),
+        step.base('taxFromScale', taxFromScale),
+        step.subtract('decote', decote),
+        step.subtract('uncollectedTax', taxAfterDecote < MIN_COLLECTED_TAX ? taxAfterDecote : 0),
+      ],
+    },
+    {
+      part: 'otherTaxes',
+      steps: [step.base('highIncomeContribution', progressiveTax(taxableIncome, HIGH_INCOME_BRACKETS))],
+    },
+  ]
 }
 
 export const france: CountryTaxModel = {

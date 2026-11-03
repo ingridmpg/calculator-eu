@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // Italy, tax year 2026: private-sector employee first insured after 1995, living in
 // Milan (Lombardia regional + Milan municipal surcharges).
@@ -60,20 +61,34 @@ function wedgeCredit(income: number): number {
   return (1_000 * (40_000 - income)) / 8_000
 }
 
-function computeTaxes(gross: number): TaxComponents {
+function computeTaxes(gross: number): TaxSection[] {
   const socialSecurity = progressiveTax(gross, INPS_BRACKETS)
   const taxableIncome = Math.max(gross - socialSecurity, 0)
 
-  const grossIrpef = progressiveTax(taxableIncome, IRPEF_BRACKETS)
-  const incomeTax = Math.max(
-    grossIrpef - employmentCredit(taxableIncome) - wedgeCredit(taxableIncome),
-    0,
-  )
-
-  const regionalSurcharge = progressiveTax(taxableIncome, LOMBARDIA_BRACKETS)
-  const municipalSurcharge = taxableIncome > MILAN_EXEMPTION_LIMIT ? taxableIncome * MILAN_RATE : 0
-
-  return { incomeTax, socialSecurity, otherTaxes: regionalSurcharge + municipalSurcharge }
+  return [
+    { part: 'socialSecurity', steps: [step.base('inps', socialSecurity)] },
+    {
+      part: 'incomeTax',
+      steps: [
+        step.base('gross', gross),
+        step.subtract('deductibleContributions', socialSecurity),
+        step.subtotal('taxableIncome', taxableIncome),
+        step.base('taxFromScale', progressiveTax(taxableIncome, IRPEF_BRACKETS)),
+        step.subtract('employmentCredit', employmentCredit(taxableIncome)),
+        step.subtract('wedgeCredit', wedgeCredit(taxableIncome)),
+      ],
+    },
+    {
+      part: 'otherTaxes',
+      steps: [
+        step.base('regionalSurcharge', progressiveTax(taxableIncome, LOMBARDIA_BRACKETS)),
+        step.add(
+          'municipalSurcharge',
+          taxableIncome > MILAN_EXEMPTION_LIMIT ? taxableIncome * MILAN_RATE : 0,
+        ),
+      ],
+    },
+  ]
 }
 
 export const italy: CountryTaxModel = {
