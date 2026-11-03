@@ -29,6 +29,7 @@ describe('getVisibleTrace', () => {
   const model: CountryTaxModel = {
     year: 2026,
     sources: [],
+    notes: [],
     computeTaxes: () => [
       {
         part: 'incomeTax',

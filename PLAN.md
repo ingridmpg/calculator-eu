@@ -82,8 +82,8 @@ Other choices:
 
 ## Architecture
 
-- `src/data/countries/<code>.ts`: one `CountryTaxModel` per country: `year`, `sources`
-  and a pure `computeTaxes(gross)` that returns the calculation as sections (income tax,
+- `src/data/countries/<code>.ts`: one `CountryTaxModel` per country: `year`, `sources`,
+  `notes` (id, kind and source ids; text in `src/i18n/`) and a pure `computeTaxes(gross)` that returns the calculation as sections (income tax,
   social security, other taxes), each a list of steps: base amounts, deductions,
   subtotals, tax from the scale and credits. Rates and thresholds are named constants at the top of the file, each with
   its legal reference. Tax systems differ too much (e.g. PT's minimum-existence rule)
@@ -93,6 +93,7 @@ Other choices:
 - `src/lib/tax.ts`: shared helpers, e.g. `progressiveTax(income, brackets)`.
 - `src/lib/trace.ts`: step builders (`step.base`, `step.subtract`, ...) and `sectionTotal`,
   which replays a section's steps.
+- `src/lib/notes.ts`: groups a country's notes by kind and numbers its sources.
 - `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` takes every amount from
   the trace (so the explanation always matches the result) and derives net, monthly
   net and effective rate.
@@ -121,9 +122,10 @@ the next one.
   steps (taxable base, deductions, subtotals, tax from the scale, credits) and the
   amounts are derived from those steps. The panel shows them under "Como foi calculado".
   Brackets are not listed one by one: the trace shows the tax from the whole scale.
-- [ ] **Phase 8 — Structured notes and sources**: notes become data (per country, with
-  the rule and its source) instead of free text only, so they can be shown in the UI
-  and indexed by the v3 assistant.
+- [x] **Phase 8 — Structured notes and sources**: each country model lists its notes
+  with an id, a kind (included in the calculation, not included, to be confirmed) and
+  the ids of the sources behind them. The text stays in `src/i18n/` under the same id.
+  The panel groups notes by kind and links each one to its numbered source.
 - [ ] **Phase 9 — Total employer cost**: employer contributions per country, shown with
   the result.
 - [ ] **Phase 10 — Taxpayer profiles** (see below), one country at a time with a pause
