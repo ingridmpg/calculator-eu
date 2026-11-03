@@ -54,9 +54,14 @@ export const netherlands: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'belastingdienst',
       label: 'Voorlopige aanslag 2026: tarieven en heffingskortingen (Belastingdienst)',
       url: 'https://www.belastingdienst.nl/wps/wcm/connect/nl/voorlopige-aanslag/content/voorlopige-aanslag-tarieven-en-heffingskortingen',
     },
+  ],
+  notes: [
+    { id: 'nationalInsurance', kind: 'included', sourceIds: ['belastingdienst'] },
+    { id: 'companyPension', kind: 'excluded', sourceIds: [] },
   ],
   computeTaxes,
 }

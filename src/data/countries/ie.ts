@@ -78,21 +78,29 @@ export const ireland: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'revenueRates',
       label: 'Tax rates, bands and reliefs (Revenue)',
       url: 'https://www.revenue.ie/en/personal-tax-credits-reliefs-and-exemptions/tax-relief-charts/index.aspx',
     },
     {
+      id: 'usc',
       label: 'Standard rates and thresholds of USC (Revenue)',
       url: 'https://www.revenue.ie/en/jobs-and-pensions/usc/standard-rates-thresholds.aspx',
     },
     {
+      id: 'prsi',
       label: 'PRSI 2026 contribution rates and user guide (gov.ie)',
       url: 'https://assets.gov.ie/static/documents/cb168977/PRSI_C20260116_Contribution_Rates_and_User_Guide_-_SW_14_-_English_Version_-_January_2026_.pdf-web.pdf',
     },
     {
+      id: 'prsiCredit',
       label: 'PRSI credit worked example 2026 (BrightPay)',
       url: 'https://www.brightpay.ie/docs/2026/payroll-deductions/prsi/',
     },
+  ],
+  notes: [
+    { id: 'taxCredits', kind: 'included', sourceIds: ['revenueRates', 'usc'] },
+    { id: 'prsiRateChange', kind: 'included', sourceIds: ['prsi'] },
   ],
   computeTaxes,
 }

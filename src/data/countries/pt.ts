@@ -100,25 +100,35 @@ export const portugal: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'cirs68',
       label: 'CIRS art. 68 — taxas gerais (Portal das Finanças)',
       url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs68.aspx',
     },
     {
+      id: 'cirs68a',
       label: 'CIRS art. 68-A — taxa adicional de solidariedade (Portal das Finanças)',
       url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs68a.aspx',
     },
     {
+      id: 'cirs70',
       label: 'CIRS art. 70 — mínimo de existência (Portal das Finanças)',
       url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs70.aspx',
     },
     {
+      id: 'cirs78b',
       label: 'CIRS art. 78-B — despesas gerais familiares (Portal das Finanças)',
       url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs78b.aspx',
     },
     {
+      id: 'specificDeduction',
       label: 'Dedução específica 2026: 4 587,09 € (CGD Saldo Positivo)',
       url: 'https://www.cgd.pt/Site/Saldo-Positivo/leis-e-impostos/Pages/novidades-IRS.aspx',
     },
+  ],
+  notes: [
+    { id: 'deductionsIncluded', kind: 'included', sourceIds: ['cirs70', 'cirs78b'] },
+    { id: 'otherDeductions', kind: 'excluded', sourceIds: [] },
+    { id: 'rateCut', kind: 'pending', sourceIds: ['cirs68'] },
   ],
   computeTaxes,
 }

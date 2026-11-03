@@ -95,25 +95,34 @@ export const italy: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'irpef',
       label: 'IRPEF 2026: scaglioni e aliquote (Informazione Fiscale)',
       url: 'https://www.informazionefiscale.it/IRPEF-scaglioni-aliquote-calcolo',
     },
     {
+      id: 'inps',
       label: 'Minimali e massimali contributivi 2026, circolare INPS n. 6/2026 (Il Sole 24 Ore)',
       url: 'https://ntpluslavoro.ilsole24ore.com/art/aggiornati-minimali-e-massimali-retributivi-fini-contributivi-AIvjZDAB',
     },
     {
+      id: 'wedgeCredit',
       label: 'Ulteriore detrazione L. 207/2024 (Studio Lizier Basso Bottari)',
       url: 'https://www.lizierbassobottari.it/2025/02/25/legge-n-207-2024-art-1-somma-integrativa-e-ulteriore-detrazione/',
     },
     {
+      id: 'lombardia',
       label: 'Addizionale regionale IRPEF (Regione Lombardia)',
       url: 'https://www.regione.lombardia.it/bollo-auto-e-tributi-regionali/red-addizionale-regionale-irpef',
     },
     {
+      id: 'milan',
       label: 'Addizionale comunale IRPEF Milano (MEF)',
       url: 'https://www1.finanze.gov.it/finanze2/dipartimentopolitichefiscali/fiscalitalocale/nuova_addcomirpef/risultato.htm?anno=9999&lista=1&pagina=lombardia.htm&cm=&pr=MI&cc=F205&r=1',
     },
+  ],
+  notes: [
+    { id: 'referenceCity', kind: 'included', sourceIds: ['lombardia', 'milan'] },
+    { id: 'cashSupplements', kind: 'excluded', sourceIds: ['wedgeCredit'] },
   ],
   computeTaxes,
 }

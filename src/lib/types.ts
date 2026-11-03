@@ -89,12 +89,25 @@ export interface TaxSection {
 }
 
 export interface Source {
+  /** Unique within a country; notes refer to sources by id. */
+  id: string
   label: string
   url: string
+}
+
+/** What a note tells the reader about the calculation. */
+export type NoteKind = 'included' | 'excluded' | 'pending'
+
+/** A country note. Its text lives in `src/i18n/`, under the same id. */
+export interface CountryNote {
+  id: string
+  kind: NoteKind
+  sourceIds: readonly string[]
 }
 
 export interface CountryTaxModel {
   year: number
   sources: readonly Source[]
+  notes: readonly CountryNote[]
   computeTaxes: (gross: number) => TaxSection[]
 }

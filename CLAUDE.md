@@ -78,7 +78,8 @@ src/
   its calculation as steps (see `src/lib/trace.ts`); `calculateSalary(gross, taxModel)`
   derives every amount from those steps and returns `gross`, `incomeTax`,
   `socialSecurity`, `otherTaxes`, `net`, `netMonthly`, `effectiveRate` and the `trace`.
-- Every country's rules include `year` and `sources` (official or reliable URLs).
+- Every country's rules include `year`, `sources` (official or reliable URLs, each with
+  an id) and `notes` (id, kind and the sources behind them; the text lives in `src/i18n/`).
 - Styling with plain CSS / CSS Modules; no UI framework unless agreed.
 
 ## Tax data — caution

@@ -125,21 +125,29 @@ export const germany: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'tariff',
       label: '§ 32a EStG — Einkommensteuertarif 2026 (gesetze-im-internet.de)',
       url: 'https://www.gesetze-im-internet.de/estg/__32a.html',
     },
     {
+      id: 'insuranceDeductions',
       label: '§ 10 EStG — Sonderausgaben / Vorsorgeaufwendungen (gesetze-im-internet.de)',
       url: 'https://www.gesetze-im-internet.de/estg/__10.html',
     },
     {
+      id: 'solidaritySurcharge',
       label: 'Solidaritätszuschlag 2026: Freigrenze (Techniker Krankenkasse)',
       url: 'https://www.tk.de/firmenkunden/versicherung/beitraege-faq-und-mehr/solidaritaetszuschlag-2075802',
     },
     {
+      id: 'socialInsurance',
       label: 'Sozialversicherungsbeiträge und Beitragsbemessungsgrenzen 2026 (lohn-info.de)',
       url: 'https://www.lohn-info.de/sozialversicherungsbeitraege2026.html',
     },
+  ],
+  notes: [
+    { id: 'careInsurance', kind: 'included', sourceIds: ['socialInsurance'] },
+    { id: 'annualTax', kind: 'included', sourceIds: ['tariff'] },
   ],
   computeTaxes,
 }

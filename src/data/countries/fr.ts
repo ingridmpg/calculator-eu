@@ -127,21 +127,30 @@ export const france: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'incomeTaxScale',
       label: 'Barème de l’impôt sur le revenu 2026 (Service Public)',
       url: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F1419',
     },
     {
+      id: 'urssaf',
       label: 'Taux de cotisations du secteur privé (Urssaf)',
       url: 'https://www.urssaf.fr/accueil/outils-documentation/taux-baremes/taux-cotisations-secteur-prive.html',
     },
     {
+      id: 'pass',
       label: 'Plafond de la Sécurité sociale 2026 (Legisocial)',
       url: 'https://www.legisocial.fr/reperes-sociaux/plafond-securite-sociale-2026.html',
     },
     {
+      id: 'decote',
       label: 'Décote et abattement de 10 % 2026 (Legifiscal)',
       url: 'https://www.legifiscal.fr/actualites-fiscales/4474-ir-bareme-2026-quotient-familial-decote.html',
     },
+  ],
+  notes: [
+    { id: 'nonExecutive', kind: 'included', sourceIds: ['urssaf'] },
+    { id: 'taxScaleYear', kind: 'included', sourceIds: ['incomeTaxScale'] },
+    { id: 'companyInsurance', kind: 'excluded', sourceIds: [] },
   ],
   computeTaxes,
 }

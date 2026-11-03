@@ -111,21 +111,29 @@ export const spain: CountryTaxModel = {
   year: 2026,
   sources: [
     {
+      id: 'contributions',
       label: 'Orden PJC/297/2026 — bases y tipos de cotización 2026 (BOE)',
       url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-7296',
     },
     {
+      id: 'irpfLaw',
       label: 'Ley 35/2006 del IRPF — texto consolidado (BOE)',
       url: 'https://www.boe.es/buscar/act.php?id=BOE-A-2006-20764',
     },
     {
+      id: 'madrid',
       label: 'IRPF — escala autonómica y mínimo del contribuyente (Comunidad de Madrid)',
       url: 'https://www.comunidad.madrid/atencion-contribuyente/irpf',
     },
     {
+      id: 'minimumWage',
       label: 'RD-ley 5/2026 — deducción para perceptores del SMI (Iberley)',
       url: 'https://www.iberley.es/noticias/medidas-fiscales-rd-ley-5-2026-elimina-irpf-perceptores-smi-2026-adopta-medidas-los-afectados-las-borrascas-36098',
     },
+  ],
+  notes: [
+    { id: 'referenceCity', kind: 'included', sourceIds: ['madrid'] },
+    { id: 'contributions', kind: 'included', sourceIds: ['contributions'] },
   ],
   computeTaxes,
 }
