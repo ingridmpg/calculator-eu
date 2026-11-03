@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { calculateSalary } from '../../lib/calculator.ts'
-import { ireland } from './ie.ts'
+import { progressiveTax } from '../../lib/tax.ts'
+import { incomeTaxBrackets, ireland } from './ie.ts'
 
 // Expected values match irishcalculators.ie to the cent (see PLAN.md).
 describe('Ireland 2026', () => {
@@ -43,5 +44,25 @@ describe('Ireland 2026', () => {
     const result = calculateSalary(13_000, ireland)
     expect(result.otherTaxes).toBe(0)
     expect(result.socialSecurity).toBe(0)
+  })
+})
+
+// Joint assessment for income tax; PRSI and USC per earner on half the salary.
+describe('Ireland 2026, married couple', () => {
+  it('matches the Revenue joint assessment example (€55,000 + €20,800)', () => {
+    // Band €53,000 + €20,800; credits €4,000 + 2 × €2,000
+    const tax = progressiveTax(75_800, incomeTaxBrackets(20_800, 2)) - 8_000
+    expect(tax).toBeCloseTo(7_560, 2)
+  })
+
+  it('€60,000 household: all within the €83,000 band; PRSI and USC as two €30,000 earners', () => {
+    const result = calculateSalary(60_000, ireland, { adults: 2, children: 1 })
+    expect(result.incomeTax).toBeCloseTo(4_000, 2)
+    expect(result.socialSecurity + result.otherTaxes).toBeCloseTo(2 * (30_000 - 2_000 - 26_295.93), 2)
+  })
+
+  it('€120,000 household: the band increase is capped at €35,000', () => {
+    // 88 000 × 20% + 32 000 × 40% − 8 000
+    expect(calculateSalary(120_000, ireland, { adults: 2, children: 2 }).incomeTax).toBeCloseTo(22_400, 2)
   })
 })

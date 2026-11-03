@@ -1,6 +1,6 @@
 import { COUNTRIES, type CountryCode } from '../data/countries/index.ts'
 import { strings } from '../i18n/index.ts'
-import styles from './CountryPicker.module.css'
+import { ChoiceGroup } from './ChoiceGroup.tsx'
 
 interface CountryPickerProps {
   selected: CountryCode
@@ -9,29 +9,9 @@ interface CountryPickerProps {
 
 export function CountryPicker({ selected, onSelect }: CountryPickerProps) {
   const t = strings.countries
+  const choices = COUNTRIES.map(({ code, flag }) => ({ value: code, label: t.names[code], icon: flag }))
 
   return (
-    <fieldset className={styles.root}>
-      <legend className={styles.legend}>{t.legend}</legend>
-
-      <div className={styles.grid}>
-        {COUNTRIES.map(({ code, flag }) => (
-          <label key={code} className={styles.option}>
-            <input
-              className={styles.radio}
-              type="radio"
-              name="country"
-              value={code}
-              checked={code === selected}
-              onChange={() => onSelect(code)}
-            />
-            <span className={styles.flag} aria-hidden="true">
-              {flag}
-            </span>
-            <span>{t.names[code]}</span>
-          </label>
-        ))}
-      </div>
-    </fieldset>
+    <ChoiceGroup legend={t.legend} name="country" choices={choices} selected={selected} onSelect={onSelect} />
   )
 }

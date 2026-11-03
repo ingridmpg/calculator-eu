@@ -51,3 +51,32 @@ describe('Portugal 2026', () => {
     expect(calculateSalary(60_000, portugal).employerContributions).toBeCloseTo(14_250, 2)
   })
 })
+
+describe('Portugal 2026, couple filing jointly', () => {
+  const coupleOneChild = { adults: 2, children: 1 } as const
+  const coupleTwoChildren = { adults: 2, children: 2 } as const
+
+  it('€40,000 household, 1 child', () => {
+    const result = calculateSalary(40_000, portugal, coupleOneChild)
+    // Taxable 40 000 − 2 × 4 587,09 = 30 825,82; scale on half (15 412,91) = 2 308,31 × 2
+    // = 4 616,62 − general expenses 2 × 250 − dependent 600
+    expect(result.socialSecurity).toBeCloseTo(4_400, 2)
+    expect(result.incomeTax).toBeCloseTo(3_516.62, 2)
+    expect(result.net).toBeCloseTo(32_083.38, 2)
+  })
+
+  it('€60,000 household, 2 children', () => {
+    const result = calculateSalary(60_000, portugal, coupleTwoChildren)
+    // Taxable 50 825,82; scale on half (25 412,91) = 4 810,65 × 2 − 500 − 1 200
+    expect(result.incomeTax).toBeCloseTo(7_921.31, 2)
+    expect(result.net).toBeCloseTo(45_478.69, 2)
+  })
+
+  it('applies the minimum-existence rule to each earner', () => {
+    expect(calculateSalary(20_000, portugal, coupleTwoChildren).incomeTax).toBe(0)
+  })
+
+  it('employer cost is the same as for one earner (no ceiling)', () => {
+    expect(calculateSalary(40_000, portugal, coupleOneChild).employerCost).toBeCloseTo(49_500, 2)
+  })
+})

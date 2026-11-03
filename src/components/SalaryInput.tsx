@@ -7,17 +7,24 @@ import styles from './SalaryInput.module.css'
 interface SalaryInputProps {
   value: number
   onChange: (value: number) => void
+  isHousehold: boolean
 }
 
-export function SalaryInput({ value, onChange }: SalaryInputProps) {
+export function SalaryInput({ value, onChange, isHousehold }: SalaryInputProps) {
   const inputId = useId()
+  const hintId = useId()
   const t = strings.salary
 
   return (
     <div className={styles.root}>
       <label htmlFor={inputId} className={styles.label}>
-        {t.label}
+        {isHousehold ? t.householdLabel : t.label}
       </label>
+      {isHousehold && (
+        <p id={hintId} className={styles.hint}>
+          {t.householdHint}
+        </p>
+      )}
 
       <div className={styles.amount}>
         <input
@@ -25,6 +32,7 @@ export function SalaryInput({ value, onChange }: SalaryInputProps) {
           className={styles.input}
           type="text"
           inputMode="numeric"
+          aria-describedby={isHousehold ? hintId : undefined}
           autoComplete="off"
           value={value > 0 ? formatNumber(value) : ''}
           placeholder="0"

@@ -1,6 +1,12 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
+import { scaleSections, step } from '../../lib/trace.ts'
+import type {
+  CountryTaxModel,
+  Household,
+  TaxBracket,
+  TaxSection,
+  TraceStep,
+} from '../../lib/types.ts'
 
 // Netherlands, tax year 2026: box 1 for an employee under AOW age, no pension
 // contributions (they depend on the employer's scheme) and no deductions.
@@ -47,7 +53,7 @@ function generalCredit(income: number): number {
   return Math.max(GENERAL_CREDIT_MAX - reduction, 0)
 }
 
-function computeTaxes(gross: number): TaxSection[] {
+function individualTaxes(gross: number): TaxSection[] {
   return [
     {
       // National insurance is part of the box 1 rate, so there is no social security section.
@@ -71,6 +77,11 @@ function computeEmployerContributions(gross: number): TraceStep[] {
   ]
 }
 
+/** No joint taxation: each spouse is taxed on half the household salary. */
+function computeTaxes(gross: number, { adults }: Household): TaxSection[] {
+  return scaleSections(individualTaxes(gross / adults), adults)
+}
+
 export const netherlands: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -78,6 +89,16 @@ export const netherlands: CountryTaxModel = {
       id: 'belastingdienst',
       label: 'Voorlopige aanslag 2026: tarieven en heffingskortingen (Belastingdienst)',
       url: 'https://www.belastingdienst.nl/wps/wcm/connect/nl/voorlopige-aanslag/content/voorlopige-aanslag-tarieven-en-heffingskortingen',
+    },
+    {
+      id: 'combinationCredit',
+      label: 'Inkomensafhankelijke combinatiekorting (Belastingdienst)',
+      url: 'https://www.belastingdienst.nl/wps/wcm/connect/nl/voorlopige-aanslag/content/voorlopige-aanslag-tarieven-en-heffingskortingen',
+    },
+    {
+      id: 'childBenefit',
+      label: 'Kinderbijslag (Sociale Verzekeringsbank)',
+      url: 'https://www.svb.nl/nl/kinderbijslag',
     },
     {
       id: 'employerPremiums',
@@ -98,7 +119,10 @@ export const netherlands: CountryTaxModel = {
   notes: [
     { id: 'nationalInsurance', kind: 'included', sourceIds: ['belastingdienst'] },
     { id: 'employerCost', kind: 'included', sourceIds: ['employerPremiums', 'averageWhk', 'zvw'] },
+    { id: 'individualTaxation', kind: 'included', sourceIds: ['belastingdienst'] },
     { id: 'companyPension', kind: 'excluded', sourceIds: [] },
+    { id: 'combinationCredit', kind: 'excluded', sourceIds: ['combinationCredit'] },
+    { id: 'childBenefit', kind: 'excluded', sourceIds: ['childBenefit'] },
   ],
   computeTaxes,
   computeEmployerContributions,

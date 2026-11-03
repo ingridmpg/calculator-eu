@@ -9,6 +9,12 @@
   color: var(--color-ink-muted);
 }
 
+.hint {
+  margin-top: calc(-1 * var(--space-2));
+  font-size: var(--text-sm);
+  color: var(--color-ink-muted);
+}
+
 .amount {
   display: flex;
   align-items: baseline;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { calculateSalary } from '../../lib/calculator.ts'
-import { france } from './fr.ts'
+import { familyQuotientTax, france } from './fr.ts'
 
 // Contributions match salairia.com (non-cadre); income tax derived by hand from the
 // 2026 barème with the 10% allowance and the décote (see PLAN.md).
@@ -39,5 +39,30 @@ describe('France 2026', () => {
 
   it('pays nothing on a zero salary', () => {
     expect(calculateSalary(0, france).net).toBe(0)
+  })
+})
+
+describe('France 2026, couple filing jointly', () => {
+  // Service Public (F2705) examples for a couple with one child (2.5 parts).
+  it('applies the quotient familial below the cap', () => {
+    expect(familyQuotientTax(63_000, 2, 1)).toEqual({ taxWithChildren: 3_740, quotientCap: 0 })
+  })
+
+  it('caps the saving per half part at €1,807', () => {
+    const { taxWithChildren, quotientCap } = familyQuotientTax(80_000, 2, 1)
+    expect(taxWithChildren).toBeCloseTo(6_759.98, 1)
+    expect(taxWithChildren + quotientCap).toBeCloseTo(10_207.98 - 1_807, 1)
+  })
+
+  it('€40,000 household, 1 child: the couple décote cancels the tax', () => {
+    const result = calculateSalary(40_000, france, { adults: 2, children: 1 })
+    // Contributions per earner on €20,000; taxable 29 523,24 / 2,5 parts → 57,56 of tax
+    expect(result.socialSecurity).toBeCloseTo(8_336.1, 2)
+    expect(result.incomeTax).toBe(0)
+  })
+
+  it('€200,000 household, 2 children: the cap applies', () => {
+    // Taxable 148 476,75: 30 751,00 with 2 parts − 2 × 1 807 = 27 137,00
+    expect(calculateSalary(200_000, france, { adults: 2, children: 2 }).incomeTax).toBeCloseTo(27_137.01, 1)
   })
 })

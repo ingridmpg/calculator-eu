@@ -1,5 +1,6 @@
-import { sectionTotal, stepsTotal } from './trace.ts'
-import type { CountryTaxModel, SalaryResult, TaxPartKey, TaxSection } from './types.ts'
+import { SINGLE } from './profiles.ts'
+import { scaleSteps, sectionTotal, stepsTotal } from './trace.ts'
+import type { CountryTaxModel, Household, SalaryResult, TaxPartKey, TaxSection } from './types.ts'
 
 function partTotal(trace: readonly TaxSection[], part: TaxPartKey): number {
   return trace
@@ -8,13 +9,19 @@ function partTotal(trace: readonly TaxSection[], part: TaxPartKey): number {
 }
 
 /** Every amount comes from the trace, so the explanation always matches the result. */
-export function calculateSalary(gross: number, taxModel: CountryTaxModel): SalaryResult {
-  const trace = taxModel.computeTaxes(gross)
+export function calculateSalary(
+  gross: number,
+  taxModel: CountryTaxModel,
+  household: Household = SINGLE,
+): SalaryResult {
+  const trace = taxModel.computeTaxes(gross, household)
   const incomeTax = partTotal(trace, 'incomeTax')
   const socialSecurity = partTotal(trace, 'socialSecurity')
   const otherTaxes = partTotal(trace, 'otherTaxes')
   const net = gross - incomeTax - socialSecurity - otherTaxes
-  const employerTrace = taxModel.computeEmployerContributions(gross)
+  // Employer contributions are per earner; a couple's salary is split 50/50.
+  const { adults } = household
+  const employerTrace = scaleSteps(taxModel.computeEmployerContributions(gross / adults), adults)
   const employerContributions = stepsTotal(employerTrace)
 
   return {

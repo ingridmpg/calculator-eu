@@ -1,6 +1,12 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
+import { scaleSections, step } from '../../lib/trace.ts'
+import type {
+  CountryTaxModel,
+  Household,
+  TaxBracket,
+  TaxSection,
+  TraceStep,
+} from '../../lib/types.ts'
 
 // Italy, tax year 2026: private-sector employee first insured after 1995, living in
 // Milan (Lombardia regional + Milan municipal surcharges).
@@ -72,7 +78,7 @@ function wedgeCredit(income: number): number {
   return (1_000 * (40_000 - income)) / 8_000
 }
 
-function computeTaxes(gross: number): TaxSection[] {
+function individualTaxes(gross: number): TaxSection[] {
   const socialSecurity = progressiveTax(gross, INPS_BRACKETS)
   const taxableIncome = Math.max(gross - socialSecurity, 0)
 
@@ -100,6 +106,14 @@ function computeTaxes(gross: number): TaxSection[] {
       ],
     },
   ]
+}
+
+/**
+ * No joint taxation: each spouse is taxed on half the household salary. Children under
+ * 21 give no IRPEF credit since 2022 (replaced by the Assegno unico, a cash benefit).
+ */
+function computeTaxes(gross: number, { adults }: Household): TaxSection[] {
+  return scaleSections(individualTaxes(gross / adults), adults)
 }
 
 function computeEmployerContributions(gross: number): TraceStep[] {
@@ -140,6 +154,16 @@ export const italy: CountryTaxModel = {
       url: 'https://www1.finanze.gov.it/finanze2/dipartimentopolitichefiscali/fiscalitalocale/nuova_addcomirpef/risultato.htm?anno=9999&lista=1&pagina=lombardia.htm&cm=&pr=MI&cc=F205&r=1',
     },
     {
+      id: 'childCredits',
+      label: 'Detrazioni per figli a carico 2026: solo dai 21 ai 30 anni (Sky TG24)',
+      url: 'https://tg24.sky.it/economia/2026/03/25/detrazioni-figli-carico-2026-novita',
+    },
+    {
+      id: 'childAllowance',
+      label: 'Assegno unico e universale per i figli a carico (INPS)',
+      url: 'https://www.inps.it/it/it/dettaglio-scheda.schede-servizio-strumento.schede-servizi.assegno-unico-e-universale-per-i-figli-a-carico-55984.assegno-unico-e-universale-per-i-figli-a-carico.html',
+    },
+    {
       id: 'employerInps',
       label: 'Aliquote contributive commercio fino a 50 dipendenti (Kitech)',
       url: 'https://www.kitech.it/Contributi-previdenziali.aspx?p=4_138',
@@ -154,7 +178,9 @@ export const italy: CountryTaxModel = {
     { id: 'referenceCity', kind: 'included', sourceIds: ['lombardia', 'milan'] },
     { id: 'employerCost', kind: 'included', sourceIds: ['employerInps', 'employerCostExample'] },
     { id: 'workAccidentInsurance', kind: 'excluded', sourceIds: [] },
+    { id: 'individualTaxation', kind: 'included', sourceIds: ['childCredits'] },
     { id: 'cashSupplements', kind: 'excluded', sourceIds: ['wedgeCredit'] },
+    { id: 'childAllowance', kind: 'excluded', sourceIds: ['childAllowance'] },
   ],
   computeTaxes,
   computeEmployerContributions,

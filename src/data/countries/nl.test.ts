@@ -34,3 +34,17 @@ describe('Netherlands 2026', () => {
     expect(calculateSalary(8_000, netherlands).incomeTax).toBe(0)
   })
 })
+
+// No joint taxation: each spouse is taxed on half the household salary.
+describe('Netherlands 2026, married couple', () => {
+  it('€60,000 household is two €30,000 earners (children do not change the tax)', () => {
+    const result = calculateSalary(60_000, netherlands, { adults: 2, children: 1 })
+    expect(result.net).toBeCloseTo(2 * 27_754.13, 2)
+    expect(calculateSalary(60_000, netherlands, { adults: 2, children: 2 }).net).toBe(result.net)
+  })
+
+  it('applies the employer premium ceiling to each earner', () => {
+    // Each earner (100 000) is above the ceiling: 2 × 79 409 × 17,13%
+    expect(calculateSalary(200_000, netherlands, { adults: 2, children: 1 }).employerContributions).toBeCloseTo(27_205.52, 2)
+  })
+})

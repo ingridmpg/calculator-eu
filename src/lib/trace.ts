@@ -27,6 +27,16 @@ export function sectionTotal(section: TaxSection): number {
   return stepsTotal(section.steps)
 }
 
+/** The same steps for `count` identical earners. */
+export function scaleSteps(steps: readonly TraceStep[], count: number): TraceStep[] {
+  return steps.map((traceStep) => ({ ...traceStep, amount: traceStep.amount * count }))
+}
+
+/** The same sections for `count` identical earners. */
+export function scaleSections(sections: readonly TaxSection[], count: number): TaxSection[] {
+  return sections.map((section) => ({ ...section, steps: scaleSteps(section.steps, count) }))
+}
+
 /** Additions and deductions of zero say nothing, so they are not shown. */
 export function withoutZeroChanges(steps: readonly TraceStep[]): TraceStep[] {
   return steps.filter(

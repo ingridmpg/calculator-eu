@@ -1,8 +1,16 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
+import type {
+  CountryTaxModel,
+  Household,
+  TaxBracket,
+  TaxSection,
+  TraceStep,
+} from '../../lib/types.ts'
 
-// Portugal, tax year 2026: annual IRS settlement for a single employee (Category A).
+// Portugal, tax year 2026: annual IRS settlement for employees (Category A). A married
+// couple files jointly (CIRS art. 69): the household salary is split 50/50, the tax
+// scale is applied to half the taxable income and the result is doubled.
 //
 // TODO: verify — a cut of 0.3 to 0.5 points to brackets 1–6 was authorised by a law
 // promulgated on 2026-10-20 but needs a government decree-law to take effect.
@@ -20,8 +28,11 @@ const EMPLOYER_SOCIAL_SECURITY_RATE = 0.2375
 /** CIRS art. 25: 8.54 × IAS, or the social security paid if higher. */
 const MIN_SPECIFIC_DEDUCTION = 4_587.09
 
-/** CIRS art. 78-B: 35% of general family expenses, up to €250. Assumed fully used. */
+/** CIRS art. 78-B: 35% of general family expenses, up to €250 per taxpayer. Assumed fully used. */
 const GENERAL_EXPENSES_DEDUCTION = 250
+
+/** CIRS art. 78-A: €600 per dependent (children aged 6 to 17 get no age supplement). */
+const DEPENDENT_DEDUCTION = 600
 
 /** CIRS art. 68 (Lei 73-A/2025). */
 const INCOME_TAX_BRACKETS: readonly TaxBracket[] = [
@@ -68,11 +79,19 @@ function minimumExistenceAbatement(gross: number, specificDeduction: number): nu
   return Math.min(Math.max(abatement, 0), Math.max(gross - specificDeduction, 0))
 }
 
-function computeTaxes(gross: number): TaxSection[] {
+function computeTaxes(gross: number, { adults, children }: Household): TaxSection[] {
   const socialSecurity = gross * SOCIAL_SECURITY_RATE
-  const specificDeduction = Math.max(MIN_SPECIFIC_DEDUCTION, socialSecurity)
-  const abatement = minimumExistenceAbatement(gross, specificDeduction)
+
+  // The specific deduction and the minimum-existence rule apply to each earner.
+  const earnerGross = gross / adults
+  const earnerSpecificDeduction = Math.max(MIN_SPECIFIC_DEDUCTION, earnerGross * SOCIAL_SECURITY_RATE)
+  const specificDeduction = earnerSpecificDeduction * adults
+  const abatement = minimumExistenceAbatement(earnerGross, earnerSpecificDeduction) * adults
   const taxableIncome = Math.max(gross - specificDeduction, 0) - abatement
+
+  /** Conjugal quotient (art. 69 and 68-A n.º 2): the scale is applied per adult. */
+  const scaleTax = (brackets: readonly TaxBracket[]) =>
+    progressiveTax(taxableIncome / adults, brackets) * adults
 
   return [
     {
@@ -86,14 +105,15 @@ function computeTaxes(gross: number): TaxSection[] {
         step.subtract('specificDeduction', specificDeduction),
         step.subtract('minimumExistence', abatement),
         step.subtotal('taxableIncome', taxableIncome),
-        step.base('taxFromScale', progressiveTax(taxableIncome, INCOME_TAX_BRACKETS)),
-        step.subtract('generalExpenses', GENERAL_EXPENSES_DEDUCTION),
+        step.base(adults > 1 ? 'jointTaxFromScale' : 'taxFromScale', scaleTax(INCOME_TAX_BRACKETS)),
+        step.subtract('generalExpenses', GENERAL_EXPENSES_DEDUCTION * adults),
+        step.subtract('dependentsDeduction', DEPENDENT_DEDUCTION * children),
       ],
     },
     {
       part: 'otherTaxes',
       steps: [
-        step.base('additionalSolidarityRate', progressiveTax(taxableIncome, SOLIDARITY_BRACKETS)),
+        step.base('additionalSolidarityRate', scaleTax(SOLIDARITY_BRACKETS)),
       ],
     },
   ]
@@ -128,6 +148,21 @@ export const portugal: CountryTaxModel = {
       url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs78b.aspx',
     },
     {
+      id: 'cirs69',
+      label: 'CIRS art. 69 — quociente conjugal (Portal das Finanças)',
+      url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs69.aspx',
+    },
+    {
+      id: 'cirs78a',
+      label: 'CIRS art. 78-A — dedução dos dependentes (Portal das Finanças)',
+      url: 'https://info.portaldasfinancas.gov.pt/pt/informacao_fiscal/codigos_tributarios/cirs_rep/Pages/irs78a.aspx',
+    },
+    {
+      id: 'familyAllowance',
+      label: 'Guia prático — abono de família para crianças e jovens (Segurança Social)',
+      url: 'https://www.seg-social.pt/storage1/files/4001-AbonoFamiliaCriancas-v4-81-soVwXw4CVAJZogxd9MIo1w.pdf',
+    },
+    {
       id: 'specificDeduction',
       label: 'Dedução específica 2026: 4 587,09 € (CGD Saldo Positivo)',
       url: 'https://www.cgd.pt/Site/Saldo-Positivo/leis-e-impostos/Pages/novidades-IRS.aspx',
@@ -145,6 +180,8 @@ export const portugal: CountryTaxModel = {
   ],
   notes: [
     { id: 'deductionsIncluded', kind: 'included', sourceIds: ['cirs70', 'cirs78b'] },
+    { id: 'jointTaxation', kind: 'included', sourceIds: ['cirs69', 'cirs78a'] },
+    { id: 'familyAllowance', kind: 'excluded', sourceIds: ['familyAllowance'] },
     { id: 'otherDeductions', kind: 'excluded', sourceIds: [] },
     { id: 'employerCost', kind: 'included', sourceIds: ['contributiveCode', 'compensationFunds'] },
     { id: 'workAccidentInsurance', kind: 'excluded', sourceIds: [] },

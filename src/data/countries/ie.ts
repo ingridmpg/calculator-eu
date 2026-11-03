@@ -1,17 +1,28 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
+import type {
+  CountryTaxModel,
+  Household,
+  TaxBracket,
+  TaxSection,
+  TraceStep,
+} from '../../lib/types.ts'
 
-// Ireland, tax year 2026: single PAYE employee, Class A1 PRSI, no medical card.
+// Ireland, tax year 2026: PAYE employees, Class A1 PRSI, no medical card. A married
+// couple is jointly assessed for income tax; PRSI and USC are always per earner, each
+// on half the household salary.
 
-/** Single person: 20% on the first €44,000, 40% on the balance (Revenue). */
-const INCOME_TAX_BRACKETS: readonly TaxBracket[] = [
-  { upTo: 44_000, rate: 0.2 },
-  { upTo: Infinity, rate: 0.4 },
-]
+/** Standard rate band (20%; 40% above it), Revenue 2026. */
+const STANDARD_RATE = 0.2
+const HIGHER_RATE = 0.4
+const SINGLE_RATE_BAND = 44_000
+/** Married couple: €53,000, increased by the lower earner's income up to €35,000. */
+const MARRIED_RATE_BAND = 53_000
+const MAX_SECOND_EARNER_INCREASE = 35_000
 
-/** Single person credit €2,000 + employee (PAYE) credit €2,000 (Revenue). */
-const TAX_CREDITS = 2_000 + 2_000
+/** Personal credit (€2,000 single, €4,000 married) + €2,000 employee credit per earner. */
+const PERSONAL_CREDIT = { single: 2_000, married: 4_000 }
+const EMPLOYEE_CREDIT = 2_000
 
 /** Universal Social Charge 2026 (Revenue). Not charged when income is €13,000 or less. */
 const USC_EXEMPTION_LIMIT = 13_000
@@ -67,21 +78,38 @@ function annualPrsi(gross: number): number {
   )
 }
 
-function computeTaxes(gross: number): TaxSection[] {
+function usc(earnerGross: number): number {
+  return earnerGross <= USC_EXEMPTION_LIMIT ? 0 : progressiveTax(earnerGross, USC_BRACKETS)
+}
+
+/** For a couple, the band grows by the lower earner's income (half the salary here). */
+export function incomeTaxBrackets(lowerEarnerGross: number, adults: number): readonly TaxBracket[] {
+  const rateBand =
+    adults > 1
+      ? MARRIED_RATE_BAND + Math.min(lowerEarnerGross, MAX_SECOND_EARNER_INCREASE)
+      : SINGLE_RATE_BAND
   return [
-    { part: 'socialSecurity', steps: [step.base('prsi', annualPrsi(gross))] },
+    { upTo: rateBand, rate: STANDARD_RATE },
+    { upTo: Infinity, rate: HIGHER_RATE },
+  ]
+}
+
+function computeTaxes(gross: number, { adults }: Household): TaxSection[] {
+  const earnerGross = gross / adults
+  const personalCredit = adults > 1 ? PERSONAL_CREDIT.married : PERSONAL_CREDIT.single
+  const credits = personalCredit + EMPLOYEE_CREDIT * adults
+
+  return [
+    { part: 'socialSecurity', steps: [step.base('prsi', annualPrsi(earnerGross) * adults)] },
     {
       part: 'incomeTax',
       steps: [
         step.base('taxableIncome', gross),
-        step.base('taxFromScale', progressiveTax(gross, INCOME_TAX_BRACKETS)),
-        step.subtract('personalCredits', TAX_CREDITS),
+        step.base('taxFromScale', progressiveTax(gross, incomeTaxBrackets(earnerGross, adults))),
+        step.subtract('personalCredits', credits),
       ],
     },
-    {
-      part: 'otherTaxes',
-      steps: [step.base('usc', gross <= USC_EXEMPTION_LIMIT ? 0 : progressiveTax(gross, USC_BRACKETS))],
-    },
+    { part: 'otherTaxes', steps: [step.base('usc', usc(earnerGross) * adults)] },
   ]
 }
 
@@ -124,6 +152,11 @@ export const ireland: CountryTaxModel = {
       url: 'https://www.ccpc.ie/consumers/money/pensions/auto-enrolment/',
     },
     {
+      id: 'childBenefit',
+      label: 'Child Benefit (Citizens Information)',
+      url: 'https://www.citizensinformation.ie/en/social-welfare/families-and-children/child-benefit/',
+    },
+    {
       id: 'prsiCredit',
       label: 'PRSI credit worked example 2026 (BrightPay)',
       url: 'https://www.brightpay.ie/docs/2026/payroll-deductions/prsi/',
@@ -132,8 +165,10 @@ export const ireland: CountryTaxModel = {
   notes: [
     { id: 'taxCredits', kind: 'included', sourceIds: ['revenueRates', 'usc'] },
     { id: 'prsiRateChange', kind: 'included', sourceIds: ['prsi'] },
+    { id: 'jointAssessment', kind: 'included', sourceIds: ['revenueRates', 'usc'] },
     { id: 'employerCost', kind: 'included', sourceIds: ['prsi', 'employerPrsi'] },
     { id: 'autoEnrolment', kind: 'excluded', sourceIds: ['autoEnrolment'] },
+    { id: 'childBenefit', kind: 'excluded', sourceIds: ['childBenefit'] },
   ],
   computeTaxes,
   computeEmployerContributions,

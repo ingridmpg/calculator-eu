@@ -40,3 +40,18 @@ describe('Italy (Milan) 2026', () => {
     expect(result.otherTaxes).toBeCloseTo(184.5 + 7_702.5 * 0.0158, 2)
   })
 })
+
+// No joint taxation and no IRPEF credit for children under 21 (Assegno unico instead).
+describe('Italy (Milan) 2026, married couple', () => {
+  it('€60,000 household is two €30,000 earners, whatever the number of children', () => {
+    const result = calculateSalary(60_000, italy, { adults: 2, children: 1 })
+    expect(result.net).toBeCloseTo(2 * 23_425.52, 1)
+    expect(calculateSalary(60_000, italy, { adults: 2, children: 2 }).net).toBe(result.net)
+  })
+
+  it('each earner gets the €1,000 wedge credit on half the salary', () => {
+    // €70,000 alone gets none; two €35,000 earners each get it in full
+    const couple = calculateSalary(70_000, italy, { adults: 2, children: 1 })
+    expect(couple.incomeTax).toBeCloseTo(2 * calculateSalary(35_000, italy).incomeTax, 2)
+  })
+})

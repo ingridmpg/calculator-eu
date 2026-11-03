@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { calculateSalary } from '../../lib/calculator.ts'
-import { germany } from './de.ts'
+import { germany, splittingTax } from './de.ts'
 
 // Expected values derived by hand from § 32a EStG 2026 (annual assessment). Salary
 // calculators (monthly Lohnsteuer, class I) land within €10 of these (see PLAN.md).
@@ -45,5 +45,37 @@ describe('Germany 2026', () => {
 
   it('pays no income tax below the basic allowance', () => {
     expect(calculateSalary(14_000, germany).incomeTax).toBe(0)
+  })
+})
+
+// Joint assessment with Ehegattensplitting; social insurance and allowances per earner.
+describe('Germany 2026, married couple', () => {
+  it('matches the 2026 Splittingtabelle (lohn-info.de)', () => {
+    expect(splittingTax(50_000, 2)).toBe(5_700)
+    expect(splittingTax(80_000, 2)).toBe(14_418)
+    expect(splittingTax(90_000, 2)).toBe(17_670)
+  })
+
+  it('€40,000 household, 1 child: Kindergeld is better than the child allowance', () => {
+    const result = calculateSalary(40_000, germany, { adults: 2, children: 1 })
+    // Per earner on 20 000: 9,3% + 1,3% + 8,75% + 1,8% (no childless surcharge)
+    expect(result.socialSecurity).toBeCloseTo(8_460, 2)
+    // Taxable 29 668: tariff on 14 834 = 404, × 2
+    expect(result.incomeTax).toBe(808)
+  })
+
+  it('€60,000 household, 2 children: lower care rate for the second child', () => {
+    const result = calculateSalary(60_000, germany, { adults: 2, children: 2 })
+    // Care 1,55% on 30 000 × 2
+    expect(result.socialSecurity).toBeCloseTo(12_540, 2)
+    expect(result.incomeTax).toBe(4_634)
+  })
+
+  it('€150,000 household, 2 children: child allowance plus the Kindergeld added back', () => {
+    const result = calculateSalary(150_000, germany, { adults: 2, children: 2 })
+    // Taxable 119 637,75 − 2 × 9 756 = 100 125,75: tariff on 50 062,87 = 10 570, × 2 = 21 140
+    // + Kindergeld 2 × 3 108 (the allowance saves more than that)
+    expect(result.incomeTax).toBe(27_356)
+    expect(result.otherTaxes).toBe(0)
   })
 })
