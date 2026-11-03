@@ -136,8 +136,18 @@ Three profiles, picked in the UI:
 - The result is the **salary after deductions** only. Family cash benefits paid
   per child (abono de família, Kindergeld, allocations familiales, assegno unico,
   child benefit, …) are not added; each country's notes mention them.
-- How the household salary is split between the spouses is still open (see
-  "Open questions").
+- Married profiles use **joint taxation** wherever the country has it, so income
+  tax depends only on the household's total, not on who earns what:
+  - Joint taxation: PT (joint filing, conjugal quotient), ES (declaración
+    conjunta), FR (quotient familial, always joint), DE (Ehegattensplitting),
+    IE (joint assessment).
+  - NL and IT have no joint taxation: each spouse is always taxed individually.
+  - Social security is always per person, with per-person ceilings.
+  - Where the result still depends on the split (NL and IT income tax, social
+    security ceilings, the IE band increase for a second earner), the household
+    salary is split **50/50** between two earners.
+  - Joint taxation is applied even where it is not the most favourable choice
+    (e.g. ES with two similar salaries); the notes say so.
 - Each profile is validated like v1: at least two reference values per country,
   recorded in "Validation".
 - When this ships, update "Fixed taxpayer profile" in CLAUDE.md, the on-screen
@@ -228,13 +238,11 @@ pay below ~€20,000 is understated. Explained in the Italy note.
 - Taxpayer profiles (v2): single without children (current), married with 1 child,
   married with 2 children. Married profiles take the household's gross salary and
   show the household's net salary. Children aged 6–17. Family cash benefits are
-  excluded from the result and only mentioned in the notes.
+  excluded from the result and only mentioned in the notes. Joint taxation where the
+  country has it (PT, ES, FR, DE, IE); NL and IT tax individually; social security
+  is per person; where the split matters, 50/50 between two earners.
 - Assistant (RAG): v3. Needs the v2 calculation trace and structured notes first.
 
 ## Open questions
 
-- **Married profiles: how the household salary is split between the spouses.**
-  Proposed: two earners at 50/50. With an equal split, joint and separate
-  taxation give the same result in most countries (DE splitting, FR quotient,
-  PT joint filing), and social security ceilings apply per person as they do in
-  reality. To confirm before the profiles are implemented.
+None at the moment.
