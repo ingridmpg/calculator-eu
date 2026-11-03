@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // Germany, tax year 2026: annual income tax assessment (Veranlagung) for a single,
 // childless employee aged 23+ with statutory health insurance and no church tax.
@@ -73,7 +74,7 @@ function cappedContribution(gross: number, rate: number, ceiling: number): numbe
   return progressiveTax(gross, brackets)
 }
 
-function computeTaxes(gross: number): TaxComponents {
+function computeTaxes(gross: number): TaxSection[] {
   const pension = cappedContribution(gross, PENSION_RATE, PENSION_CONTRIBUTION_CEILING)
   const unemployment = cappedContribution(gross, UNEMPLOYMENT_RATE, PENSION_CONTRIBUTION_CEILING)
   const health = cappedContribution(gross, HEALTH_RATE, HEALTH_CONTRIBUTION_CEILING)
@@ -92,11 +93,32 @@ function computeTaxes(gross: number): TaxComponents {
   )
   const incomeTax = tariffIncomeTax(taxableIncome)
 
-  return {
-    incomeTax,
-    socialSecurity: pension + unemployment + health + longTermCare,
-    otherTaxes: solidaritySurcharge(incomeTax),
-  }
+  return [
+    {
+      part: 'socialSecurity',
+      steps: [
+        step.base('pensionInsurance', pension, PENSION_RATE),
+        step.add('unemploymentInsurance', unemployment, UNEMPLOYMENT_RATE),
+        step.add('healthInsurance', health, HEALTH_RATE),
+        step.add('longTermCareInsurance', longTermCare, LONG_TERM_CARE_RATE),
+      ],
+    },
+    {
+      part: 'incomeTax',
+      steps: [
+        step.base('gross', gross),
+        step.subtract('employeeAllowance', EMPLOYEE_ALLOWANCE),
+        step.subtract('specialExpensesAllowance', SPECIAL_EXPENSES_ALLOWANCE),
+        step.subtract('deductibleContributions', insuranceDeductions),
+        step.subtotal('taxableIncome', taxableIncome),
+        step.base('taxFromScale', incomeTax),
+      ],
+    },
+    {
+      part: 'otherTaxes',
+      steps: [step.base('solidaritySurcharge', solidaritySurcharge(incomeTax))],
+    },
+  ]
 }
 
 export const germany: CountryTaxModel = {

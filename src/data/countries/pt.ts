@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // Portugal, tax year 2026: annual IRS settlement for a single employee (Category A).
 //
@@ -64,19 +65,35 @@ function minimumExistenceAbatement(gross: number, specificDeduction: number): nu
   return Math.min(Math.max(abatement, 0), Math.max(gross - specificDeduction, 0))
 }
 
-function computeTaxes(gross: number): TaxComponents {
+function computeTaxes(gross: number): TaxSection[] {
   const socialSecurity = gross * SOCIAL_SECURITY_RATE
   const specificDeduction = Math.max(MIN_SPECIFIC_DEDUCTION, socialSecurity)
-  const taxableIncome =
-    Math.max(gross - specificDeduction, 0) - minimumExistenceAbatement(gross, specificDeduction)
+  const abatement = minimumExistenceAbatement(gross, specificDeduction)
+  const taxableIncome = Math.max(gross - specificDeduction, 0) - abatement
 
-  const incomeTax = Math.max(
-    progressiveTax(taxableIncome, INCOME_TAX_BRACKETS) - GENERAL_EXPENSES_DEDUCTION,
-    0,
-  )
-  const otherTaxes = progressiveTax(taxableIncome, SOLIDARITY_BRACKETS)
-
-  return { incomeTax, socialSecurity, otherTaxes }
+  return [
+    {
+      part: 'socialSecurity',
+      steps: [step.base('employeeContribution', socialSecurity, SOCIAL_SECURITY_RATE)],
+    },
+    {
+      part: 'incomeTax',
+      steps: [
+        step.base('gross', gross),
+        step.subtract('specificDeduction', specificDeduction),
+        step.subtract('minimumExistence', abatement),
+        step.subtotal('taxableIncome', taxableIncome),
+        step.base('taxFromScale', progressiveTax(taxableIncome, INCOME_TAX_BRACKETS)),
+        step.subtract('generalExpenses', GENERAL_EXPENSES_DEDUCTION),
+      ],
+    },
+    {
+      part: 'otherTaxes',
+      steps: [
+        step.base('additionalSolidarityRate', progressiveTax(taxableIncome, SOLIDARITY_BRACKETS)),
+      ],
+    },
+  ]
 }
 
 export const portugal: CountryTaxModel = {

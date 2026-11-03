@@ -10,6 +10,7 @@ const result: SalaryResult = {
   net: 28_000,
   netMonthly: 28_000 / 12,
   effectiveRate: 0.3,
+  trace: [],
 }
 
 describe('getSalaryParts', () => {

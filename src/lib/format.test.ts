@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatCurrency, formatNumber, formatPercent } from './format.ts'
+import { formatCurrency, formatNumber, formatPercent, formatRate } from './format.ts'
 
 // pt-PT uses a no-break space as the thousands separator; normalise it for readable assertions.
 const normaliseSpaces = (text: string) => text.replace(/\s/g, ' ')
@@ -17,5 +17,10 @@ describe('format', () => {
   it('formats fractions as percentages with one decimal', () => {
     expect(formatPercent(0.324)).toBe('32,4%')
     expect(formatPercent(0)).toBe('0,0%')
+  })
+
+  it('formats rates with only the decimals they have', () => {
+    expect(formatRate(0.11)).toBe('11%')
+    expect(formatRate(0.0875)).toBe('8,75%')
   })
 })

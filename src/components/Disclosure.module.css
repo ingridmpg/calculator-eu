@@ -1,0 +1,17 @@
+.root {
+  border-top: 1px solid var(--color-line);
+  padding: var(--space-4) 0;
+  font-size: var(--text-sm);
+}
+
+.summary {
+  width: fit-content;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.content {
+  display: grid;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}

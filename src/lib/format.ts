@@ -28,3 +28,13 @@ export function formatNumber(amount: number): string {
 export function formatPercent(fraction: number): string {
   return percentFormatter.format(fraction)
 }
+
+const rateFormatter = new Intl.NumberFormat(LOCALE, {
+  style: 'percent',
+  maximumFractionDigits: 2,
+})
+
+/** A legal rate, with only the decimals it has: 0.11 → "11%", 0.0875 → "8,75%" */
+export function formatRate(fraction: number): string {
+  return rateFormatter.format(fraction)
+}

@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // Spain, tax year 2026: IRPF (state + Comunidad de Madrid) for a single employee
 // with a permanent contract, paid in 12 monthly instalments.
@@ -73,23 +74,37 @@ function minimumWageCredit(gross: number): number {
   return Math.max(credit, 0)
 }
 
-function computeTaxes(gross: number): TaxComponents {
-  const socialSecurity =
-    Math.min(gross, ANNUAL_CONTRIBUTION_CEILING) * SOCIAL_SECURITY_RATE +
-    progressiveTax(gross, SOLIDARITY_CONTRIBUTION_BRACKETS)
+function computeTaxes(gross: number): TaxSection[] {
+  const contribution = Math.min(gross, ANNUAL_CONTRIBUTION_CEILING) * SOCIAL_SECURITY_RATE
+  const solidarityContribution = progressiveTax(gross, SOLIDARITY_CONTRIBUTION_BRACKETS)
+  const socialSecurity = contribution + solidarityContribution
 
   const netEmploymentIncome = Math.max(gross - socialSecurity, 0)
-  const taxBase = Math.max(
-    netEmploymentIncome - OTHER_EXPENSES_DEDUCTION - lowIncomeReduction(netEmploymentIncome),
-    0,
-  )
+  const reduction = lowIncomeReduction(netEmploymentIncome)
+  const taxBase = Math.max(netEmploymentIncome - OTHER_EXPENSES_DEDUCTION - reduction, 0)
 
-  const grossTax =
-    taxAboveMinimum(taxBase, STATE_PERSONAL_MINIMUM, STATE_BRACKETS) +
-    taxAboveMinimum(taxBase, MADRID_PERSONAL_MINIMUM, MADRID_BRACKETS)
-  const incomeTax = Math.max(grossTax - minimumWageCredit(gross), 0)
-
-  return { incomeTax, socialSecurity, otherTaxes: 0 }
+  return [
+    {
+      part: 'socialSecurity',
+      steps: [
+        step.base('employeeContribution', contribution, SOCIAL_SECURITY_RATE),
+        step.add('solidarityContribution', solidarityContribution),
+      ],
+    },
+    {
+      part: 'incomeTax',
+      steps: [
+        step.base('gross', gross),
+        step.subtract('deductibleContributions', socialSecurity),
+        step.subtract('otherExpenses', OTHER_EXPENSES_DEDUCTION),
+        step.subtract('lowIncomeReduction', reduction),
+        step.subtotal('taxableIncome', taxBase),
+        step.base('stateTax', taxAboveMinimum(taxBase, STATE_PERSONAL_MINIMUM, STATE_BRACKETS)),
+        step.add('regionalTax', taxAboveMinimum(taxBase, MADRID_PERSONAL_MINIMUM, MADRID_BRACKETS)),
+        step.subtract('minimumWageCredit', minimumWageCredit(gross)),
+      ],
+    },
+  ]
 }
 
 export const spain: CountryTaxModel = {

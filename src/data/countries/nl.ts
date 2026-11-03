@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // Netherlands, tax year 2026: box 1 for an employee under AOW age, no pension
 // contributions (they depend on the employer's scheme) and no deductions.
@@ -33,16 +34,20 @@ function generalCredit(income: number): number {
   return Math.max(GENERAL_CREDIT_MAX - reduction, 0)
 }
 
-function computeTaxes(gross: number): TaxComponents {
-  const box1Tax = progressiveTax(gross, BOX_1_BRACKETS)
-  const credits = generalCredit(gross) + labourCredit(gross)
-
-  return {
-    // Tax credits can reduce the tax to zero but are not paid out.
-    incomeTax: Math.max(box1Tax - credits, 0),
-    socialSecurity: 0,
-    otherTaxes: 0,
-  }
+function computeTaxes(gross: number): TaxSection[] {
+  return [
+    {
+      // National insurance is part of the box 1 rate, so there is no social security section.
+      part: 'incomeTax',
+      steps: [
+        step.base('taxableIncome', gross),
+        step.base('taxFromScale', progressiveTax(gross, BOX_1_BRACKETS)),
+        // Tax credits can reduce the tax to zero but are not paid out.
+        step.subtract('generalCredit', generalCredit(gross)),
+        step.subtract('labourCredit', labourCredit(gross)),
+      ],
+    },
+  ]
 }
 
 export const netherlands: CountryTaxModel = {

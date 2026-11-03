@@ -1,5 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import type { CountryTaxModel, TaxBracket, TaxComponents } from '../../lib/types.ts'
+import { step } from '../../lib/trace.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
 
 // Ireland, tax year 2026: single PAYE employee, Class A1 PRSI, no medical card.
 
@@ -55,12 +56,22 @@ function annualPrsi(gross: number): number {
   )
 }
 
-function computeTaxes(gross: number): TaxComponents {
-  return {
-    incomeTax: Math.max(progressiveTax(gross, INCOME_TAX_BRACKETS) - TAX_CREDITS, 0),
-    socialSecurity: annualPrsi(gross),
-    otherTaxes: gross <= USC_EXEMPTION_LIMIT ? 0 : progressiveTax(gross, USC_BRACKETS),
-  }
+function computeTaxes(gross: number): TaxSection[] {
+  return [
+    { part: 'socialSecurity', steps: [step.base('prsi', annualPrsi(gross))] },
+    {
+      part: 'incomeTax',
+      steps: [
+        step.base('taxableIncome', gross),
+        step.base('taxFromScale', progressiveTax(gross, INCOME_TAX_BRACKETS)),
+        step.subtract('personalCredits', TAX_CREDITS),
+      ],
+    },
+    {
+      part: 'otherTaxes',
+      steps: [step.base('usc', gross <= USC_EXEMPTION_LIMIT ? 0 : progressiveTax(gross, USC_BRACKETS))],
+    },
+  ]
 }
 
 export const ireland: CountryTaxModel = {
