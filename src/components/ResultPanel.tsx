@@ -40,6 +40,14 @@ export function ResultPanel({ country, gross }: ResultPanelProps) {
 
       <Breakdown result={result} />
 
+      <dl className={styles.employer}>
+        <dt className={styles.label}>{t.employerCost}</dt>
+        <dd className={styles.statValue}>{formatCurrency(result.employerCost)}</dd>
+        <dd className={styles.label}>
+          {t.employerCostDetail(formatCurrency(result.employerContributions))}
+        </dd>
+      </dl>
+
       <p className={styles.notice}>{t.taxYear(country.taxModel.year)}</p>
 
       <div>

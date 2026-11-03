@@ -22,6 +22,14 @@ describe('Netherlands 2026', () => {
     expect(result.net).toBeCloseTo(44_093.53, 2)
   })
 
+  // administratiex.nl: €468.30 a month on €3,000 without Whk (15.61%); plus Whk 1.52%.
+  it('employer cost: 17.13% up to the maximum premium wage', () => {
+    expect(calculateSalary(36_000, netherlands).employerContributions).toBeCloseTo(6_166.8, 2)
+    expect(calculateSalary(60_000, netherlands).employerCost).toBeCloseTo(70_278, 2)
+    // 79 409 × 17,13%
+    expect(calculateSalary(100_000, netherlands).employerContributions).toBeCloseTo(13_602.76, 2)
+  })
+
   it('credits do not turn into a payout on a low salary', () => {
     expect(calculateSalary(8_000, netherlands).incomeTax).toBe(0)
   })

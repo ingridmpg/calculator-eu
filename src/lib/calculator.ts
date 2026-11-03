@@ -1,4 +1,4 @@
-import { sectionTotal } from './trace.ts'
+import { sectionTotal, stepsTotal } from './trace.ts'
 import type { CountryTaxModel, SalaryResult, TaxPartKey, TaxSection } from './types.ts'
 
 function partTotal(trace: readonly TaxSection[], part: TaxPartKey): number {
@@ -14,6 +14,8 @@ export function calculateSalary(gross: number, taxModel: CountryTaxModel): Salar
   const socialSecurity = partTotal(trace, 'socialSecurity')
   const otherTaxes = partTotal(trace, 'otherTaxes')
   const net = gross - incomeTax - socialSecurity - otherTaxes
+  const employerTrace = taxModel.computeEmployerContributions(gross)
+  const employerContributions = stepsTotal(employerTrace)
 
   return {
     gross,
@@ -24,5 +26,8 @@ export function calculateSalary(gross: number, taxModel: CountryTaxModel): Salar
     netMonthly: net / 12,
     effectiveRate: gross > 0 ? 1 - net / gross : 0,
     trace,
+    employerContributions,
+    employerCost: gross + employerContributions,
+    employerTrace,
   }
 }

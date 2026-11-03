@@ -1,6 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
 
 // Spain, tax year 2026: IRPF (state + Comunidad de Madrid) for a single employee
 // with a permanent contract, paid in 12 monthly instalments.
@@ -15,13 +15,31 @@ const ANNUAL_CONTRIBUTION_CEILING = MONTHLY_CONTRIBUTION_CEILING * 12
  */
 const SOCIAL_SECURITY_RATE = 0.047 + 0.0155 + 0.001 + 0.0015
 
-/** Cotización adicional de solidaridad, employee share, on pay above the ceiling (art. 17). */
-const SOLIDARITY_CONTRIBUTION_BRACKETS: readonly TaxBracket[] = [
-  { upTo: ANNUAL_CONTRIBUTION_CEILING, rate: 0 },
-  { upTo: 5_611.32 * 12, rate: 0.0019 },
-  { upTo: 7_651.8 * 12, rate: 0.0021 },
-  { upTo: Infinity, rate: 0.0024 },
-]
+/**
+ * Employer share (Orden PJC/297/2026): contingencias comunes 23.60% + desempleo 5.50%
+ * (permanent contract) + FOGASA 0.20% + formación profesional 0.60% + MEI 0.75%,
+ * up to the ceiling.
+ */
+const EMPLOYER_SOCIAL_SECURITY_RATE = 0.236 + 0.055 + 0.002 + 0.006 + 0.0075
+
+/**
+ * Accidentes de trabajo y enfermedades profesionales, paid by the employer up to the ceiling.
+ * Reference: office work (LGSS DA 61ª, cuadro II a: IT 0.80% + IMS 0.70%).
+ */
+const WORK_ACCIDENT_RATE = 0.008 + 0.007
+
+/** Cotización adicional de solidaridad on pay above the ceiling (art. 17), by tranche. */
+function solidarityBrackets(rates: readonly [number, number, number]): readonly TaxBracket[] {
+  return [
+    { upTo: ANNUAL_CONTRIBUTION_CEILING, rate: 0 },
+    { upTo: 5_611.32 * 12, rate: rates[0] },
+    { upTo: 7_651.8 * 12, rate: rates[1] },
+    { upTo: Infinity, rate: rates[2] },
+  ]
+}
+
+const SOLIDARITY_CONTRIBUTION_BRACKETS = solidarityBrackets([0.0019, 0.0021, 0.0024])
+const EMPLOYER_SOLIDARITY_CONTRIBUTION_BRACKETS = solidarityBrackets([0.0096, 0.0104, 0.0122])
 
 /** LIRPF art. 19.2.f: flat "otros gastos" deduction for employees. */
 const OTHER_EXPENSES_DEDUCTION = 2_000
@@ -107,6 +125,22 @@ function computeTaxes(gross: number): TaxSection[] {
   ]
 }
 
+function computeEmployerContributions(gross: number): TraceStep[] {
+  const contributionBase = Math.min(gross, ANNUAL_CONTRIBUTION_CEILING)
+  return [
+    step.add(
+      'employerContribution',
+      contributionBase * EMPLOYER_SOCIAL_SECURITY_RATE,
+      EMPLOYER_SOCIAL_SECURITY_RATE,
+    ),
+    step.add('workAccidentInsurance', contributionBase * WORK_ACCIDENT_RATE, WORK_ACCIDENT_RATE),
+    step.add(
+      'solidarityContribution',
+      progressiveTax(gross, EMPLOYER_SOLIDARITY_CONTRIBUTION_BRACKETS),
+    ),
+  ]
+}
+
 export const spain: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -126,6 +160,11 @@ export const spain: CountryTaxModel = {
       url: 'https://www.comunidad.madrid/atencion-contribuyente/irpf',
     },
     {
+      id: 'workAccidentRates',
+      label: 'RD-ley 3/2026 — tarifa de primas por accidentes de trabajo (BOE)',
+      url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-2548',
+    },
+    {
       id: 'minimumWage',
       label: 'RD-ley 5/2026 — deducción para perceptores del SMI (Iberley)',
       url: 'https://www.iberley.es/noticias/medidas-fiscales-rd-ley-5-2026-elimina-irpf-perceptores-smi-2026-adopta-medidas-los-afectados-las-borrascas-36098',
@@ -134,6 +173,8 @@ export const spain: CountryTaxModel = {
   notes: [
     { id: 'referenceCity', kind: 'included', sourceIds: ['madrid'] },
     { id: 'contributions', kind: 'included', sourceIds: ['contributions'] },
+    { id: 'employerCost', kind: 'included', sourceIds: ['contributions', 'workAccidentRates'] },
   ],
   computeTaxes,
+  computeEmployerContributions,
 }

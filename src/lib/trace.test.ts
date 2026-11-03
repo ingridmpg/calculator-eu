@@ -30,6 +30,7 @@ describe('getVisibleTrace', () => {
     year: 2026,
     sources: [],
     notes: [],
+    computeEmployerContributions: () => [],
     computeTaxes: () => [
       {
         part: 'incomeTax',

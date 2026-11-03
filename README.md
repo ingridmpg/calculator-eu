@@ -13,7 +13,8 @@ other taxes. The interface is in Portuguese (pt-PT).
 - Type a gross annual salary (or drag the slider) and pick a country. The result updates as you type.
 - See the net annual and monthly amount, the effective tax rate, and a bar that splits the gross salary into its parts.
 - Each line of the breakdown shows its share of gross. Hovering the bar highlights the matching line, and vice versa.
-- "Como foi calculado" shows each step: deductions, taxable income, tax from the scale and credits.
+- The total cost for the employer: gross salary plus the employer's statutory contributions.
+- "Como foi calculado" shows each step: deductions, taxable income, tax from the scale and credits, and the employer's contributions.
 - "Notas e fontes" lists each country's special cases and links to the official sources behind the numbers.
 
 ## Countries
@@ -39,6 +40,7 @@ Every result uses the same taxpayer profile, which the app states on screen:
 - No special regimes (e.g. IRS Jovem in Portugal, the Beckham law in Spain, the 30% ruling in the Netherlands).
 - No church tax. Regional and local taxes use a named reference city.
 - The **final annual tax**, not the monthly withholding on a payslip.
+- Employer cost includes statutory contributions only. Where a rate depends on the sector or company size, each country uses a stated reference (e.g. office work).
 
 These are simplified estimates. They do not replace an official simulator.
 
@@ -56,8 +58,8 @@ All calculations run in the browser; there is no backend.
 
 ```
 src/
-  data/countries/   one file per country: rates, thresholds and a pure computeTaxes(gross)
-                    that returns the calculation step by step
+  data/countries/   one file per country: rates, thresholds and pure computeTaxes(gross) and
+                    computeEmployerContributions(gross) that return the calculation step by step
   lib/              calculateSalary(), progressiveTax(), formatting, salary parts
   i18n/             every UI string (pt-PT), ready for an English version
   components/       SalaryInput, CountryPicker, ResultPanel, SalarySplitBar, Breakdown,
@@ -102,7 +104,7 @@ publish folder (`dist`), so connecting the repository to Netlify is enough.
 
 ## Roadmap (v2)
 
-- Total employer cost.
+- Household profiles (married, with 1 or 2 children).
 - Optional English interface.
 - Belgium and more countries, including non-euro ones.
 - 12 vs 14 monthly payments, shareable URL.

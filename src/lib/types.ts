@@ -9,6 +9,11 @@ export interface SalaryResult {
   effectiveRate: number
   /** How each deduction was calculated, as returned by the country's tax model. */
   trace: readonly TaxSection[]
+  /** Contributions the employer pays on top of the gross salary. */
+  employerContributions: number
+  /** Gross salary plus employer contributions. */
+  employerCost: number
+  employerTrace: readonly TraceStep[]
 }
 
 /** The employee deductions a salary is split into. */
@@ -67,6 +72,13 @@ export type TraceStepKey =
   | 'usc'
   | 'regionalSurcharge'
   | 'municipalSurcharge'
+  // Employer contributions
+  | 'employerContribution'
+  | 'workAccidentInsurance'
+  | 'trainingLevies'
+  | 'employerLevies'
+  | 'severancePay'
+  | 'generalReduction'
 
 /**
  * How a step combines with the running amount: `base` starts from a new amount,
@@ -110,4 +122,6 @@ export interface CountryTaxModel {
   sources: readonly Source[]
   notes: readonly CountryNote[]
   computeTaxes: (gross: number) => TaxSection[]
+  /** Statutory employer contributions, as `add` steps on top of the gross salary. */
+  computeEmployerContributions: (gross: number) => TraceStep[]
 }

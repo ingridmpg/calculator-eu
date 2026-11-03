@@ -25,6 +25,14 @@ describe('Spain (Madrid) 2026', () => {
     expect(calculateSalary(80_000, spain).socialSecurity).toBeCloseTo(4_017.16, 2)
   })
 
+  it('employer cost: 32.15% up to the ceiling plus the employer solidarity share', () => {
+    // 30,65% contributions + 1,50% work accidents (office reference)
+    expect(calculateSalary(30_000, spain).employerCost).toBeCloseTo(39_645, 2)
+    expect(calculateSalary(60_000, spain).employerContributions).toBeCloseTo(19_290, 2)
+    // 61 214,40 × 32,15% + 6121,44 × 0,96% + 12 664,16 × 1,04%
+    expect(calculateSalary(80_000, spain).employerContributions).toBeCloseTo(19_870.9, 2)
+  })
+
   it('minimum wage (€17,094) pays no IRPF', () => {
     expect(calculateSalary(17_094, spain).incomeTax).toBe(0)
   })
