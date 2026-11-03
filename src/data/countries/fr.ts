@@ -1,8 +1,16 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
+import type {
+  CountryTaxModel,
+  Household,
+  TaxBracket,
+  TaxSection,
+  TraceStep,
+} from '../../lib/types.ts'
 
-// France: single employee (non-cadre), one tax part (1 part de quotient familial).
+// France: employees (non-cadre). A married couple always files jointly: social
+// contributions and the 10% allowance are per earner (half the household salary each),
+// and income tax uses the quotient familial (2 parts, plus half a part per child).
 // Social contributions use 2026 rates. Income tax uses the latest published scale,
 // the 2026 barème (loi de finances 2026), which applies to 2025 income.
 // Company-specific items (mutuelle, prévoyance) are not included.
@@ -75,7 +83,7 @@ const CSG_DEDUCTIBLE_RATE = 0.068
 const CSG_NON_DEDUCTIBLE_RATE = 0.024
 const CRDS_RATE = 0.005
 
-/** CGI art. 83: flat 10% allowance for work expenses, with a floor and a ceiling. */
+/** CGI art. 83: flat 10% allowance for work expenses, with a floor and a ceiling per earner. */
 const EXPENSES_ALLOWANCE_RATE = 0.1
 const EXPENSES_ALLOWANCE_MIN = 509
 const EXPENSES_ALLOWANCE_MAX = 14_555
@@ -89,15 +97,22 @@ const INCOME_TAX_BRACKETS: readonly TaxBracket[] = [
   { upTo: Infinity, rate: 0.45 },
 ]
 
-/** Décote for a single person: reduces small tax bills (CGI art. 197, 4). */
-const DECOTE_BASE = 897
+/** CGI art. 194: half a part for each of the first two children (the profiles have at most two). */
+const PARTS_PER_CHILD = 0.5
+
+/** CGI art. 197, 2: the tax saving from each extra half part is capped. */
+const QUOTIENT_CAP_PER_HALF_PART = 1_807
+
+/** Décote: reduces small tax bills (CGI art. 197, 4), for a single person or a couple. */
+const DECOTE_BASE = { single: 897, couple: 1_483 }
 const DECOTE_RATE = 0.4525
 
 /** CGI art. 1657: income tax below this amount is not collected. */
 const MIN_COLLECTED_TAX = 61
 
 /**
- * Contribution exceptionnelle sur les hauts revenus (CGI art. 223 sexies), single person.
+ * Contribution exceptionnelle sur les hauts revenus (CGI art. 223 sexies), per adult
+ * (the thresholds double for a couple).
  * The 2026 minimum-rate contribution (CDHR) never applies to salaries alone, because
  * income tax on them already exceeds 20%, so it is not modelled.
  */
@@ -123,47 +138,79 @@ function socialContributions(gross: number) {
   return { pension, deductibleCsg, nonDeductible, deductible: pension + deductibleCsg }
 }
 
-function computeTaxes(gross: number): TaxSection[] {
-  const contributions = socialContributions(gross)
+/** Tax from the scale applied to the income of one part, times the number of parts. */
+function quotientTax(taxableIncome: number, parts: number): number {
+  return progressiveTax(taxableIncome / parts, INCOME_TAX_BRACKETS) * parts
+}
 
-  const netTaxableSalary = Math.max(gross - contributions.deductible, 0)
-  const expensesAllowance = Math.min(
+/**
+ * Tax with the quotient familial: each child's half part lowers the tax, but by at most
+ * the cap per half part; `quotientCap` is what the cap adds back.
+ */
+export function familyQuotientTax(taxableIncome: number, adults: number, children: number) {
+  const taxWithoutChildren = quotientTax(taxableIncome, adults)
+  const taxWithChildren = quotientTax(taxableIncome, adults + PARTS_PER_CHILD * children)
+  const capLimit = taxWithoutChildren - QUOTIENT_CAP_PER_HALF_PART * children
+  return { taxWithChildren, quotientCap: Math.max(capLimit - taxWithChildren, 0) }
+}
+
+function expensesAllowance(netTaxableSalary: number): number {
+  return Math.min(
     Math.max(netTaxableSalary * EXPENSES_ALLOWANCE_RATE, EXPENSES_ALLOWANCE_MIN),
     EXPENSES_ALLOWANCE_MAX,
     netTaxableSalary,
   )
-  const taxableIncome = netTaxableSalary - expensesAllowance
+}
 
-  const taxFromScale = progressiveTax(taxableIncome, INCOME_TAX_BRACKETS)
+function computeTaxes(gross: number, { adults, children }: Household): TaxSection[] {
+  const earnerGross = gross / adults
+  const earner = socialContributions(earnerGross)
+  const earnerNetTaxable = Math.max(earnerGross - earner.deductible, 0)
+
+  const deductible = earner.deductible * adults
+  const netTaxableSalary = earnerNetTaxable * adults
+  const allowance = expensesAllowance(earnerNetTaxable) * adults
+  const taxableIncome = netTaxableSalary - allowance
+
+  const { taxWithChildren, quotientCap } = familyQuotientTax(taxableIncome, adults, children)
+  const taxFromScale = taxWithChildren + quotientCap
+
   // The décote can cancel the tax but never makes it negative.
-  const decote = Math.min(Math.max(DECOTE_BASE - DECOTE_RATE * taxFromScale, 0), taxFromScale)
+  const decoteBase = adults > 1 ? DECOTE_BASE.couple : DECOTE_BASE.single
+  const decote = Math.min(Math.max(decoteBase - DECOTE_RATE * taxFromScale, 0), taxFromScale)
   const taxAfterDecote = taxFromScale - decote
 
   return [
     {
       part: 'socialSecurity',
       steps: [
-        step.base('pensionContributions', contributions.pension),
-        step.add('deductibleCsg', contributions.deductibleCsg),
-        step.add('nonDeductibleCsgCrds', contributions.nonDeductible),
+        step.base('pensionContributions', earner.pension * adults),
+        step.add('deductibleCsg', earner.deductibleCsg * adults),
+        step.add('nonDeductibleCsgCrds', earner.nonDeductible * adults),
       ],
     },
     {
       part: 'incomeTax',
       steps: [
         step.base('gross', gross),
-        step.subtract('deductibleContributions', contributions.deductible),
+        step.subtract('deductibleContributions', deductible),
         step.subtotal('netTaxableSalary', netTaxableSalary),
-        step.subtract('expensesAllowance', expensesAllowance),
+        step.subtract('expensesAllowance', allowance),
         step.subtotal('taxableIncome', taxableIncome),
-        step.base('taxFromScale', taxFromScale),
+        step.base(adults > 1 ? 'familyQuotientTax' : 'taxFromScale', taxWithChildren),
+        step.add('quotientCap', quotientCap),
         step.subtract('decote', decote),
         step.subtract('uncollectedTax', taxAfterDecote < MIN_COLLECTED_TAX ? taxAfterDecote : 0),
       ],
     },
     {
       part: 'otherTaxes',
-      steps: [step.base('highIncomeContribution', progressiveTax(taxableIncome, HIGH_INCOME_BRACKETS))],
+      steps: [
+        step.base(
+          'highIncomeContribution',
+          progressiveTax(taxableIncome / adults, HIGH_INCOME_BRACKETS) * adults,
+        ),
+      ],
     },
   ]
 }
@@ -229,6 +276,21 @@ export const france: CountryTaxModel = {
       url: 'https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net',
     },
     {
+      id: 'familyQuotient',
+      label: 'Quotient familial: nombre de parts et plafonnement (Service Public)',
+      url: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F2705',
+    },
+    {
+      id: 'expensesAllowance',
+      label: 'Déduction forfaitaire de 10 % pour frais professionnels (Service Public)',
+      url: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F1989',
+    },
+    {
+      id: 'familyAllowances',
+      label: 'Allocations familiales (Service Public)',
+      url: 'https://www.service-public.gouv.fr/particuliers/vosdroits/F13213',
+    },
+    {
       id: 'decote',
       label: 'Décote et abattement de 10 % 2026 (Legifiscal)',
       url: 'https://www.legifiscal.fr/actualites-fiscales/4474-ir-bareme-2026-quotient-familial-decote.html',
@@ -238,11 +300,17 @@ export const france: CountryTaxModel = {
     { id: 'nonExecutive', kind: 'included', sourceIds: ['urssaf'] },
     { id: 'taxScaleYear', kind: 'included', sourceIds: ['incomeTaxScale'] },
     {
+      id: 'familyQuotient',
+      kind: 'included',
+      sourceIds: ['familyQuotient', 'decote', 'expensesAllowance'],
+    },
+    {
       id: 'employerCost',
       kind: 'included',
       sourceIds: ['urssaf', 'generalReduction', 'workAccidentRates', 'employerSimulator'],
     },
     { id: 'companyInsurance', kind: 'excluded', sourceIds: [] },
+    { id: 'familyAllowances', kind: 'excluded', sourceIds: ['familyAllowances'] },
     { id: 'mobilityLevy', kind: 'excluded', sourceIds: ['urssaf'] },
   ],
   computeTaxes,

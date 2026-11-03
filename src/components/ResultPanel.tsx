@@ -2,6 +2,7 @@ import type { Country } from '../data/countries/index.ts'
 import { strings } from '../i18n/index.ts'
 import { calculateSalary } from '../lib/calculator.ts'
 import { formatCurrency, formatPercent } from '../lib/format.ts'
+import type { Household } from '../lib/types.ts'
 import { Breakdown } from './Breakdown.tsx'
 import { CalculationTrace } from './CalculationTrace.tsx'
 import { CountryNotes } from './CountryNotes.tsx'
@@ -10,11 +11,12 @@ import styles from './ResultPanel.module.css'
 interface ResultPanelProps {
   country: Country
   gross: number
+  household: Household
 }
 
-export function ResultPanel({ country, gross }: ResultPanelProps) {
+export function ResultPanel({ country, gross, household }: ResultPanelProps) {
   const t = strings.result
-  const result = calculateSalary(gross, country.taxModel)
+  const result = calculateSalary(gross, country.taxModel, household)
 
   return (
     <section className={styles.root}>
@@ -23,7 +25,7 @@ export function ResultPanel({ country, gross }: ResultPanelProps) {
       </h2>
 
       <div className={styles.headline} aria-live="polite" aria-atomic="true">
-        <p className={styles.label}>{t.netAnnual}</p>
+        <p className={styles.label}>{household.adults > 1 ? t.householdNetAnnual : t.netAnnual}</p>
         <p className={styles.net}>{formatCurrency(result.net)}</p>
       </div>
 

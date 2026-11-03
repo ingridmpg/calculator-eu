@@ -33,11 +33,15 @@ before starting any task, and update it when a phase is completed.
 - `main` only changes through merged PRs.
 - Mark the phase as done in PLAN.md within that phase's PR.
 
-## Fixed taxpayer profile
+## Taxpayer profiles
 
-There are no profile options in the UI. Every calculation assumes:
+The user picks one of three profiles (`src/lib/profiles.ts`): single without
+children, or a married couple with 1 or 2 children aged 6–17. For a couple, the
+salary is the household's, split 50/50 between two earners; each country applies
+its own rules (joint or individual taxation, see "Taxpayer profiles" in PLAN.md).
+Per-child cash benefits are never added to the result, only named in the notes.
+Every calculation also assumes:
 
-- Single, no dependants (the least favourable scenario in most countries).
 - Employee (not self-employed).
 - Tax resident in the selected country.
 - No special regimes (e.g. IRS Jovem / IFICI in PT, Beckham law in ES,
@@ -74,12 +78,13 @@ src/
 - Amounts in **EUR**. Non-euro countries (later phase) convert with a fixed
   rate documented in their data file, with the rate's date.
 - Format numbers with `Intl.NumberFormat` using the `pt-PT` locale.
-- Calculation functions are **pure**. A country model's `computeTaxes(gross)` returns
+- Calculation functions are **pure**. A country model's `computeTaxes(gross, household)` returns
   its calculation as steps (see `src/lib/trace.ts`); `calculateSalary(gross, taxModel)`
   derives every amount from those steps and returns `gross`, `incomeTax`,
   `socialSecurity`, `otherTaxes`, `net`, `netMonthly`, `effectiveRate` and the `trace`.
-  `computeEmployerContributions(gross)` returns the employer's statutory contributions as
-  steps, from which `employerContributions` and `employerCost` are derived.
+  `computeEmployerContributions(gross)` returns one earner's statutory employer
+  contributions as steps; `calculateSalary` scales them to the household and derives
+  `employerContributions` and `employerCost`.
 - Every country's rules include `year`, `sources` (official or reliable URLs, each with
   an id) and `notes` (id, kind and the sources behind them; the text lives in `src/i18n/`).
 - Styling with plain CSS / CSS Modules; no UI framework unless agreed.

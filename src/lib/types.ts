@@ -42,9 +42,16 @@ export type TraceStepKey =
   | 'specialExpensesAllowance'
   // Tax and tax credits
   | 'taxFromScale'
+  | 'jointTaxFromScale'
+  | 'familyQuotientTax'
+  | 'splittingTax'
+  | 'childAllowance'
+  | 'childBenefitOffset'
+  | 'quotientCap'
   | 'stateTax'
   | 'regionalTax'
   | 'generalExpenses'
+  | 'dependentsDeduction'
   | 'minimumWageCredit'
   | 'decote'
   | 'uncollectedTax'
@@ -117,11 +124,21 @@ export interface CountryNote {
   sourceIds: readonly string[]
 }
 
+/**
+ * Who earns the salary: one person, or a married couple whose household salary is
+ * split 50/50 between the two of them. Children are aged 6 to 17.
+ */
+export interface Household {
+  adults: 1 | 2
+  children: number
+}
+
 export interface CountryTaxModel {
   year: number
   sources: readonly Source[]
   notes: readonly CountryNote[]
-  computeTaxes: (gross: number) => TaxSection[]
-  /** Statutory employer contributions, as `add` steps on top of the gross salary. */
+  /** Taxes on the household's gross salary. */
+  computeTaxes: (gross: number, household: Household) => TaxSection[]
+  /** Statutory employer contributions for one earner, as `add` steps on top of their salary. */
   computeEmployerContributions: (gross: number) => TraceStep[]
 }

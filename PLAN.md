@@ -22,7 +22,7 @@ much as features.
 - Breakdown: income tax, social security, other taxes (e.g. USC in IE, Soli in DE).
 - Stacked bar: net vs. income tax vs. social security.
 - Tax year and sources for that country.
-- Footer with the fixed assumptions (see CLAUDE.md, "Fixed taxpayer profile").
+- Footer with the assumptions (see CLAUDE.md, "Taxpayer profiles").
 
 ### Countries (confirmed for v1)
 | Country | Currency | Notes |
@@ -83,7 +83,7 @@ Other choices:
 ## Architecture
 
 - `src/data/countries/<code>.ts`: one `CountryTaxModel` per country: `year`, `sources`,
-  `notes` (id, kind and source ids; text in `src/i18n/`) and a pure `computeTaxes(gross)` that returns the calculation as sections (income tax,
+  `notes` (id, kind and source ids; text in `src/i18n/`) and a pure `computeTaxes(gross, household)` that returns the calculation as sections (income tax,
   social security, other taxes), each a list of steps: base amounts, deductions,
   subtotals, tax from the scale and credits. A second pure function,
   `computeEmployerContributions(gross)`, returns the employer's contributions as steps
@@ -95,7 +95,8 @@ Other choices:
   country. Adding a country means adding one entry here.
 - `src/lib/tax.ts`: shared helpers, e.g. `progressiveTax(income, brackets)`.
 - `src/lib/trace.ts`: step builders (`step.base`, `step.subtract`, ...) and `sectionTotal`,
-  which replays a section's steps.
+  which replays a section's steps; `scaleSections` turns one earner's steps into a household's.
+- `src/lib/profiles.ts`: the taxpayer profiles and their `Household` (adults, children).
 - `src/lib/notes.ts`: groups a country's notes by kind and numbers its sources.
 - `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` takes every amount from
   the trace (so the explanation always matches the result) and derives net, monthly
@@ -133,8 +134,9 @@ the next one.
   shown below the breakdown and as a step list in "Como foi calculado". Where a rate
   depends on the sector or company size, each country uses a named reference (e.g.
   office work, small company) and says so in a note. Validated in "Employer cost" below.
-- [ ] **Phase 10 — Taxpayer profiles** (see below), one country at a time with a pause
-  after each, as in Phase 3.
+- [x] **Phase 10 — Taxpayer profiles** (see below), one country at a time with a pause
+  after each, as in Phase 3. A profile picker above the salary; country models take a
+  `Household` (adults, children); employer contributions are worked out per earner.
 - [ ] **Phase 11 — Belgium**, once its 2026 values are confirmed, with all three profiles.
 - [ ] **Phase 12 — English UI**: a second language for the strings, with a switch.
   Portuguese stays the default.
@@ -158,22 +160,21 @@ Three profiles, picked in the UI:
 - The result is the **salary after deductions** only. Family cash benefits paid
   per child (abono de família, Kindergeld, allocations familiales, assegno unico,
   child benefit, …) are not added; each country's notes mention them.
-- Married profiles use **joint taxation** wherever the country has it, so income
-  tax depends only on the household's total, not on who earns what:
-  - Joint taxation: PT (joint filing, conjugal quotient), ES (declaración
-    conjunta), FR (quotient familial, always joint), DE (Ehegattensplitting),
-    IE (joint assessment).
-  - NL and IT have no joint taxation: each spouse is always taxed individually.
-  - Social security is always per person, with per-person ceilings.
-  - Where the result still depends on the split (NL and IT income tax, social
-    security ceilings, the IE band increase for a second earner), the household
-    salary is split **50/50** between two earners.
-  - Joint taxation is applied even where it is not the most favourable choice
-    (e.g. ES with two similar salaries); the notes say so.
+- The household salary is always split **50/50** between two earners. Social
+  security, employer contributions and per-person allowances use each half.
+- Income tax per country:
+  - Joint taxation: PT (conjugal quotient, €600 per child), FR (quotient familial
+    with the cap per half part and the couple décote), DE (Ehegattensplitting;
+    Kinderfreibetrag only when it beats Kindergeld, which is then added back),
+    IE (joint assessment, band raised by the lower earner's income).
+  - Individual returns: ES (joint filing is optional and costs more with two
+    similar salaries, so each spouse files with half the child minimums), NL and IT
+    (no joint taxation; children give no tax credit for ages 6–17).
+  - Left out, with a note: the NL IACK credit (only while the youngest child is
+    under 12) and every per-child cash benefit.
 - Each profile is validated like v1: at least two reference values per country,
   recorded in "Validation".
-- When this ships, update "Fixed taxpayer profile" in CLAUDE.md, the on-screen
-  assumptions and the README.
+- Validated in "Taxpayer profiles" under Validation.
 
 ### v3
 - **Assistant (RAG)** that answers questions about the result and the tax rules.
@@ -282,6 +283,21 @@ average Whk (1.52% × €36,000 = €547.20) gives €42,166.80.
 INAIL and the funds, which the app leaves out, that is €40,766.22. The 28.98% total
 also matches the Kitech table for commerce companies up to 50 employees.
 
+### Taxpayer profiles
+
+| Country | Check | Source | OK? |
+|---------|-------|--------|-----|
+| PT | Joint method (per-earner deductions, scale on half, × 2); coleta of €3,343.47 for M = €20,000 | [simula.pt](https://simula.pt/simuladores/simulador_irs_conjunto_separado) | ✅ |
+| ES | One return per spouse with half the child minimums (art. 61); joint-return rules checked against AEAT example 5 | [AEAT](https://sede.agenciatributaria.gob.es/Sede/irpf/tengo-que-presentar-declaracion/declaracion-individual-conjunta/caracteristicas-tributacion-conjunta.html) | ✅ |
+| FR | Quotient familial examples: €63,000 → €3,740; €80,000 → €8,401 (cap applied) | [Service Public F2705](https://www.service-public.gouv.fr/particuliers/vosdroits/F2705) | ✅ |
+| DE | Splittingtabelle 2026: €50,000 → €5,700; €80,000 → €14,418; €90,000 → €17,670 | [lohn-info.de](https://lohn-info.de/grundtabelle_splittingtabelle_2026.html) | ✅ |
+| NL | Couple = two single earners (€60,000 = 2 × €30,000 reference) | Validation table above | ✅ |
+| IE | Joint assessment example (€55,000 + €20,800): €7,560 | [Revenue](https://www.revenue.ie/en/jobs-and-pensions/calculating-your-income-tax/how-income-tax-is-calculated.aspx) | ✅ |
+| IT | Couple = two single earners (€60,000 = 2 × €30,000 reference) | Validation table above | ✅ |
+
+Household results (e.g. PT €40,000 with 1 child: net €32,083.38) are hand
+calculations from these rules, recorded in each country's tests.
+
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
   government decree-law. When published, update `INCOME_TAX_BRACKETS` in
@@ -307,9 +323,9 @@ also matches the Kitech table for commerce companies up to 50 employees.
 - Taxpayer profiles (v2): single without children (current), married with 1 child,
   married with 2 children. Married profiles take the household's gross salary and
   show the household's net salary. Children aged 6–17. Family cash benefits are
-  excluded from the result and only mentioned in the notes. Joint taxation where the
-  country has it (PT, ES, FR, DE, IE); NL and IT tax individually; social security
-  is per person; where the split matters, 50/50 between two earners.
+  excluded from the result and only mentioned in the notes. Joint taxation in PT, FR,
+  DE and IE; individual returns in ES (cheaper than joint with two similar salaries),
+  NL and IT; social security is per person; the salary is split 50/50.
 - Assistant (RAG): v3. Needs the v2 calculation trace and structured notes first.
 
 ## Open questions

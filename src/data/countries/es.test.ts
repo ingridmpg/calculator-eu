@@ -41,3 +41,30 @@ describe('Spain (Madrid) 2026', () => {
     expect(calculateSalary(0, spain).net).toBe(0)
   })
 })
+
+// Couples file two individual returns (cheaper than a joint one with two similar
+// salaries), each on half the household salary, with the child minimums split (art. 61).
+describe('Spain (Madrid) 2026, couple filing individually', () => {
+  it('€40,000 household, 1 child', () => {
+    const result = calculateSalary(40_000, spain, { adults: 2, children: 1 })
+    // Each: 20 000 − 1 300 − 2 000 − art. 20 reduction 1 194,15 = base 15 505,85;
+    // minimums 6 750 (state) and 7 244,58 (Madrid); tax 908,20 + 749,37 − SMI credit 9,69
+    expect(result.socialSecurity).toBeCloseTo(2_600, 2)
+    expect(result.incomeTax).toBeCloseTo(3_295.76, 2)
+    expect(result.net).toBeCloseTo(34_104.24, 2)
+  })
+
+  it('€60,000 household, 2 children', () => {
+    expect(calculateSalary(60_000, spain, { adults: 2, children: 2 }).incomeTax).toBeCloseTo(8_246.27, 2)
+  })
+
+  it('two minimum wages pay no IRPF', () => {
+    expect(calculateSalary(2 * 17_094, spain, { adults: 2, children: 2 }).incomeTax).toBe(0)
+  })
+
+  it('applies the contribution ceiling to each earner', () => {
+    // 70 000 each: 61 214,40 × 6,5% + solidarity 6 121,44 × 0,19% + 2 664,16 × 0,21%, × 2
+    const result = calculateSalary(140_000, spain, { adults: 2, children: 1 })
+    expect(result.socialSecurity).toBeCloseTo(7_992.32, 2)
+  })
+})

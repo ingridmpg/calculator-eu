@@ -10,7 +10,7 @@ other taxes. The interface is in Portuguese (pt-PT).
 
 ## What it does
 
-- Type a gross annual salary (or drag the slider) and pick a country. The result updates as you type.
+- Pick a profile (single, or a couple with 1 or 2 children), type a gross annual salary (or drag the slider) and pick a country. The result updates as you type.
 - See the net annual and monthly amount, the effective tax rate, and a bar that splits the gross salary into its parts.
 - Each line of the breakdown shows its share of gross. Hovering the bar highlights the matching line, and vice versa.
 - The total cost for the employer: gross salary plus the employer's statutory contributions.
@@ -33,9 +33,14 @@ Belgium is planned for v2, once its 2026 values are officially published.
 
 ## Assumptions
 
-Every result uses the same taxpayer profile, which the app states on screen:
+Pick one of three profiles: single without children, or a married couple with 1 or 2
+children (aged 6–17). For a couple, the salary is the household's, split equally between
+two earners, and each country applies its own rules: joint taxation in Portugal, France,
+Germany and Ireland; individual returns in Spain, the Netherlands and Italy. Per-child cash
+benefits (abono de família, Kindergeld, child benefit, …) are not added to the net.
 
-- Single, no dependants.
+Every result also assumes:
+
 - Employee, tax resident in the chosen country.
 - No special regimes (e.g. IRS Jovem in Portugal, the Beckham law in Spain, the 30% ruling in the Netherlands).
 - No church tax. Regional and local taxes use a named reference city.
@@ -58,11 +63,11 @@ All calculations run in the browser; there is no backend.
 
 ```
 src/
-  data/countries/   one file per country: rates, thresholds and pure computeTaxes(gross) and
+  data/countries/   one file per country: rates, thresholds and pure computeTaxes(gross, household) and
                     computeEmployerContributions(gross) that return the calculation step by step
   lib/              calculateSalary(), progressiveTax(), formatting, salary parts
   i18n/             every UI string (pt-PT), ready for an English version
-  components/       SalaryInput, CountryPicker, ResultPanel, SalarySplitBar, Breakdown,
+  components/       ProfilePicker, SalaryInput, CountryPicker, ResultPanel, SalarySplitBar, Breakdown,
                     CalculationTrace, CountryNotes
   styles/           global CSS tokens; components use CSS Modules
 ```
@@ -104,7 +109,6 @@ publish folder (`dist`), so connecting the repository to Netlify is enough.
 
 ## Roadmap (v2)
 
-- Household profiles (married, with 1 or 2 children).
 - Optional English interface.
 - Belgium and more countries, including non-euro ones.
 - 12 vs 14 monthly payments, shareable URL.

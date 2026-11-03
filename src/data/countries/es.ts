@@ -1,9 +1,18 @@
 import { progressiveTax } from '../../lib/tax.ts'
-import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
+import { scaleSections, step } from '../../lib/trace.ts'
+import type {
+  CountryTaxModel,
+  Household,
+  TaxBracket,
+  TaxSection,
+  TraceStep,
+} from '../../lib/types.ts'
 
-// Spain, tax year 2026: IRPF (state + Comunidad de Madrid) for a single employee
-// with a permanent contract, paid in 12 monthly instalments.
+// Spain, tax year 2026: IRPF (state + Comunidad de Madrid) for employees with a
+// permanent contract, paid in 12 monthly instalments. A married couple with two
+// similar salaries is better off filing two individual returns than a joint one
+// (which doubles no amount, art. 84.1), so each spouse files on half the household
+// salary and the child minimums are split equally between them (LIRPF art. 61).
 
 /** Monthly contribution ceiling (Orden PJC/297/2026, art. 2), as an annual amount. */
 const MONTHLY_CONTRIBUTION_CEILING = 5_101.2
@@ -47,8 +56,14 @@ const OTHER_EXPENSES_DEDUCTION = 2_000
 /** LIRPF art. 57: state mínimo del contribuyente. */
 const STATE_PERSONAL_MINIMUM = 5_550
 
+/** LIRPF art. 58.1: state mínimo por descendientes, first and second child. */
+const STATE_CHILD_MINIMUMS = [2_400, 2_700]
+
 /** Comunidad de Madrid mínimo del contribuyente. */
 const MADRID_PERSONAL_MINIMUM = 5_956.65
+
+/** Comunidad de Madrid mínimo por descendientes, first and second child. */
+const MADRID_CHILD_MINIMUMS = [2_575.85, 2_897.83]
 
 /** LIRPF art. 63: state scale. */
 const STATE_BRACKETS: readonly TaxBracket[] = [
@@ -87,12 +102,24 @@ function taxAboveMinimum(base: number, minimum: number, brackets: readonly TaxBr
   return progressiveTax(base, brackets) - progressiveTax(Math.min(base, minimum), brackets)
 }
 
+/** Personal minimum plus this earner's share of the minimum for each child. */
+function personalAndFamilyMinimum(
+  personal: number,
+  childMinimums: readonly number[],
+  children: number,
+  childShare: number,
+): number {
+  const childTotal = childMinimums.slice(0, children).reduce((total, amount) => total + amount, 0)
+  return personal + childTotal * childShare
+}
+
 function minimumWageCredit(gross: number): number {
   const credit = MINIMUM_WAGE_CREDIT - MINIMUM_WAGE_CREDIT_TAPER * Math.max(gross - MINIMUM_WAGE, 0)
   return Math.max(credit, 0)
 }
 
-function computeTaxes(gross: number): TaxSection[] {
+/** One individual return; `childShare` is this earner's share of the child minimums. */
+function individualReturn(gross: number, children: number, childShare: number): TaxSection[] {
   const contribution = Math.min(gross, ANNUAL_CONTRIBUTION_CEILING) * SOCIAL_SECURITY_RATE
   const solidarityContribution = progressiveTax(gross, SOLIDARITY_CONTRIBUTION_BRACKETS)
   const socialSecurity = contribution + solidarityContribution
@@ -100,6 +127,18 @@ function computeTaxes(gross: number): TaxSection[] {
   const netEmploymentIncome = Math.max(gross - socialSecurity, 0)
   const reduction = lowIncomeReduction(netEmploymentIncome)
   const taxBase = Math.max(netEmploymentIncome - OTHER_EXPENSES_DEDUCTION - reduction, 0)
+  const stateMinimum = personalAndFamilyMinimum(
+    STATE_PERSONAL_MINIMUM,
+    STATE_CHILD_MINIMUMS,
+    children,
+    childShare,
+  )
+  const madridMinimum = personalAndFamilyMinimum(
+    MADRID_PERSONAL_MINIMUM,
+    MADRID_CHILD_MINIMUMS,
+    children,
+    childShare,
+  )
 
   return [
     {
@@ -117,12 +156,17 @@ function computeTaxes(gross: number): TaxSection[] {
         step.subtract('otherExpenses', OTHER_EXPENSES_DEDUCTION),
         step.subtract('lowIncomeReduction', reduction),
         step.subtotal('taxableIncome', taxBase),
-        step.base('stateTax', taxAboveMinimum(taxBase, STATE_PERSONAL_MINIMUM, STATE_BRACKETS)),
-        step.add('regionalTax', taxAboveMinimum(taxBase, MADRID_PERSONAL_MINIMUM, MADRID_BRACKETS)),
+        step.base('stateTax', taxAboveMinimum(taxBase, stateMinimum, STATE_BRACKETS)),
+        step.add('regionalTax', taxAboveMinimum(taxBase, madridMinimum, MADRID_BRACKETS)),
         step.subtract('minimumWageCredit', minimumWageCredit(gross)),
       ],
     },
   ]
+}
+
+/** Each adult files on an equal share of the household salary; the steps show the sum. */
+function computeTaxes(gross: number, { adults, children }: Household): TaxSection[] {
+  return scaleSections(individualReturn(gross / adults, children, 1 / adults), adults)
 }
 
 function computeEmployerContributions(gross: number): TraceStep[] {
@@ -165,6 +209,16 @@ export const spain: CountryTaxModel = {
       url: 'https://www.boe.es/diario_boe/txt.php?id=BOE-A-2026-2548',
     },
     {
+      id: 'jointReturn',
+      label: 'Características de la tributación conjunta (Agencia Tributaria)',
+      url: 'https://sede.agenciatributaria.gob.es/Sede/irpf/tengo-que-presentar-declaracion/declaracion-individual-conjunta/caracteristicas-tributacion-conjunta.html',
+    },
+    {
+      id: 'madridMinimums',
+      label: 'Beneficios fiscales: mínimos personales y familiares (Comunidad de Madrid)',
+      url: 'https://www.comunidad.madrid/atencion-contribuyente/beneficios-fiscales',
+    },
+    {
       id: 'minimumWage',
       label: 'RD-ley 5/2026 — deducción para perceptores del SMI (Iberley)',
       url: 'https://www.iberley.es/noticias/medidas-fiscales-rd-ley-5-2026-elimina-irpf-perceptores-smi-2026-adopta-medidas-los-afectados-las-borrascas-36098',
@@ -173,7 +227,13 @@ export const spain: CountryTaxModel = {
   notes: [
     { id: 'referenceCity', kind: 'included', sourceIds: ['madrid'] },
     { id: 'contributions', kind: 'included', sourceIds: ['contributions'] },
+    {
+      id: 'individualReturns',
+      kind: 'included',
+      sourceIds: ['irpfLaw', 'jointReturn', 'madridMinimums'],
+    },
     { id: 'employerCost', kind: 'included', sourceIds: ['contributions', 'workAccidentRates'] },
+    { id: 'familyBenefits', kind: 'excluded', sourceIds: [] },
   ],
   computeTaxes,
   computeEmployerContributions,
