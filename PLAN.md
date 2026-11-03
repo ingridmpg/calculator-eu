@@ -112,6 +112,59 @@ Each phase is developed on its own branch and merged through its own pull reques
 - Optional English UI (Portuguese stays the default).
 - Belgium, once its 2026 values are officially published.
 - More countries, non-euro currencies, 12/14 payments, shareable URL.
+- **Taxpayer profiles** (see below).
+- **Calculation trace per country**: each model also returns its intermediate
+  steps (taxable base, deductions, credits, each bracket), so the UI can show
+  "how this was calculated" and the v3 assistant can explain a result step by step.
+- **Structured notes and sources**: notes become data (per country, with the rule
+  and its source) instead of free text only, so they can be shown in the UI and
+  indexed by the v3 assistant.
+
+#### Taxpayer profiles (v2)
+
+Three profiles, picked in the UI:
+
+| Profile | Salary field | Result |
+|---|---|---|
+| Single, no children (current v1 profile) | Gross annual salary | Net salary of the person |
+| Married, 1 child | Gross annual salary **of the household** | Net salary of the household |
+| Married, 2 children | Gross annual salary **of the household** | Net salary of the household |
+
+- For the married profiles the salary field label says it is the household's
+  gross salary, and the result labels say "household".
+- Children are aged 6 to 17 (no childcare-age rules, no adult-dependant rules).
+- The result is the **salary after deductions** only. Family cash benefits paid
+  per child (abono de família, Kindergeld, allocations familiales, assegno unico,
+  child benefit, …) are not added; each country's notes mention them.
+- Married profiles use **joint taxation** wherever the country has it, so income
+  tax depends only on the household's total, not on who earns what:
+  - Joint taxation: PT (joint filing, conjugal quotient), ES (declaración
+    conjunta), FR (quotient familial, always joint), DE (Ehegattensplitting),
+    IE (joint assessment).
+  - NL and IT have no joint taxation: each spouse is always taxed individually.
+  - Social security is always per person, with per-person ceilings.
+  - Where the result still depends on the split (NL and IT income tax, social
+    security ceilings, the IE band increase for a second earner), the household
+    salary is split **50/50** between two earners.
+  - Joint taxation is applied even where it is not the most favourable choice
+    (e.g. ES with two similar salaries); the notes say so.
+- Each profile is validated like v1: at least two reference values per country,
+  recorded in "Validation".
+- When this ships, update "Fixed taxpayer profile" in CLAUDE.md, the on-screen
+  assumptions and the README.
+
+### v3
+- **Assistant (RAG)** that answers questions about the result and the tax rules.
+  - Runs in a Netlify Function (`/api/ask`); the API key stays server-side.
+  - Retrieval over official legal texts and the structured notes (multilingual).
+    The corpus is small, so no vector database: embeddings or BM25 built at
+    build time into a JSON file.
+  - The model never computes amounts: it calls `calculateSalary` (and the
+    calculation trace) as a tool.
+  - Answers cite country, tax year and source.
+  - Out of scope questions and personal tax advice are refused.
+  - Rate limiting (e.g. Netlify Blobs) and a monthly spend cap.
+  - An eval set built from the "Validation" table; evals run outside CI.
 
 ## Validation
 
@@ -182,6 +235,13 @@ pay below ~€20,000 is understated. Explained in the Italy note.
   touching components.
 - Total employer cost: v2.
 - Cost-of-living adjustment: out of scope (not in v1 or v2).
+- Taxpayer profiles (v2): single without children (current), married with 1 child,
+  married with 2 children. Married profiles take the household's gross salary and
+  show the household's net salary. Children aged 6–17. Family cash benefits are
+  excluded from the result and only mentioned in the notes. Joint taxation where the
+  country has it (PT, ES, FR, DE, IE); NL and IT tax individually; social security
+  is per person; where the split matters, 50/50 between two earners.
+- Assistant (RAG): v3. Needs the v2 calculation trace and structured notes first.
 
 ## Open questions
 
