@@ -85,7 +85,10 @@ Other choices:
 - `src/data/countries/<code>.ts`: one `CountryTaxModel` per country: `year`, `sources`,
   `notes` (id, kind and source ids; text in `src/i18n/`) and a pure `computeTaxes(gross)` that returns the calculation as sections (income tax,
   social security, other taxes), each a list of steps: base amounts, deductions,
-  subtotals, tax from the scale and credits. Rates and thresholds are named constants at the top of the file, each with
+  subtotals, tax from the scale and credits. A second pure function,
+  `computeEmployerContributions(gross)`, returns the employer's contributions as steps
+  (statutory only; where a rate depends on the sector or company, a named reference
+  case is used and explained in a note). Rates and thresholds are named constants at the top of the file, each with
   its legal reference. Tax systems differ too much (e.g. PT's minimum-existence rule)
   for one shared data schema, so each country owns its calculation, built from shared helpers.
 - `src/data/countries/index.ts`: the country list: code, flag and tax model for each
@@ -96,7 +99,7 @@ Other choices:
 - `src/lib/notes.ts`: groups a country's notes by kind and numbers its sources.
 - `src/lib/calculator.ts`: `calculateSalary(gross, taxModel)` takes every amount from
   the trace (so the explanation always matches the result) and derives net, monthly
-  net and effective rate.
+  net and effective rate, plus the employer contributions and the total employer cost.
 - `src/components/`: `SalaryInput`, `CountryPicker`, `ResultPanel`, `Breakdown`, `CalculationTrace`,
   `CountryNotes`, `Assumptions`, plus the small shared `Disclosure` and `PartSwatch`.
 
@@ -126,8 +129,10 @@ the next one.
   with an id, a kind (included in the calculation, not included, to be confirmed) and
   the ids of the sources behind them. The text stays in `src/i18n/` under the same id.
   The panel groups notes by kind and links each one to its numbered source.
-- [ ] **Phase 9 — Total employer cost**: employer contributions per country, shown with
-  the result.
+- [x] **Phase 9 — Total employer cost**: statutory employer contributions per country,
+  shown below the breakdown and as a step list in "Como foi calculado". Where a rate
+  depends on the sector or company size, each country uses a named reference (e.g.
+  office work, small company) and says so in a note. Validated in "Employer cost" below.
 - [ ] **Phase 10 — Taxpayer profiles** (see below), one country at a time with a pause
   after each, as in Phase 3.
 - [ ] **Phase 11 — Belgium**, once its 2026 values are confirmed, with all three profiles.
@@ -235,6 +240,48 @@ Employee first insured after 1995 (INPS ceiling applies). Not modelled: the tax-
 cash supplement up to €20,000 and the trattamento integrativo up to €15,000, so net
 pay below ~€20,000 is understated. Explained in the Italy note.
 
+### Employer cost
+
+| Country | Gross | Expected cost | Source | Calculated cost | OK? |
+|---------|-------|---------------|--------|-----------------|-----|
+| PT | €30,000 | €37,125 | [simula.pt](https://simula.pt/simuladores/simulador_custo_de_funcionario) (8) | €37,125 | ✅ |
+| ES | €30,000 | €39,645 | [Checkingo](https://checkingoapp.com/cuanto-cuesta-un-empleado-empresa-espana-2026) (9) | €39,645 | ✅ |
+| FR | €20,000 | €20,329.20 | [Urssaf simulator](https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net) (10) | €20,329.20 | ✅ |
+| FR | €30,000 | €37,279.80 | Urssaf simulator (10) | €37,279.80 | ✅ |
+| FR | €60,000 | €83,680.85 | Urssaf simulator (10) | €83,680.85 | ✅ |
+| FR | €80,000 | €113,304.05 | Urssaf simulator (10) | €113,304.05 | ✅ |
+| DE | €48,000 | €58,435.20 | [deutschland-rechner.de](https://www.deutschland-rechner.de/arbeitgeberkosten-rechner) (11) | €58,435.20 | ✅ |
+| NL | €36,000 | €42,166.80 | [administratiex.nl](https://administratiex.nl/blog/werkgeverspremies-2026) (12) | €42,166.80 | ✅ |
+| IE | €40,000 | €44,515 | [Saffery](https://www.saffery.com/ie/insights/articles/upcoming-prsi-rate-changes-effective-1-october-2026-what-employers-need-to-know/) (13) | €44,515 | ✅ |
+| IT | €30,000 | €40,766.22 | [Numica](https://www.numica.it/calcolatori/costo-aziendale) (14) | €40,766.22 | ✅ |
+
+(8) Same 23.75% TSU on gross and no compensation funds. The simulator also adds 1%
+work accident insurance and the meal allowance, which the app leaves out (see the
+Portugal notes).
+
+(9) Same rates (30.65% + 1.50% work accidents) from Orden PJC/297/2026; the guide
+applies 32.15% to gross.
+
+(10) Company with 5 employees, the administrative work-accident rate (fonctions
+support, 0.64%) and no mutuelle, queried through the public mon-entreprise API.
+Includes the 2026 general reduction (RGDU).
+
+(11) The calculator gives €58,224 (21.30%: social insurance + U3) with U1, U2 and
+accident insurance at 0%. Adding the app's U2 reference (0.44% × €48,000 = €211.20)
+gives €58,435.20.
+
+(12) Small employer, permanent contract: €468.30 a month on €3,000 (Awf 2.74%, Aof
+6.27%, Wko 0.50%, Zvw 6.10%) without Whk, which is set per employer. Adding the
+average Whk (1.52% × €36,000 = €547.20) gives €42,166.80.
+
+(13) Saffery: €40,000 × 11.25% = €4,500 a year before 1 October 2026 and €4,560 at
+11.40% after. Weighted 9 months / 3 months, as for employee PRSI: €4,515.
+
+(14) CCNL Commercio: Numica gives €41,585.22 with INPS 28.98% (€8,694), TFR
+(€2,072.22), INAIL 0.70% (€210), CCNL funds (€144) and Fon.Te pension (€465). Without
+INAIL and the funds, which the app leaves out, that is €40,766.22. The 28.98% total
+also matches the Kitech table for commerce companies up to 50 employees.
+
 ### Portugal — pending
 - TODO: verify — a 2026 rate cut for brackets 1–6 (law promulgated 2026-10-20) needs a
   government decree-law. When published, update `INCOME_TAX_BRACKETS` in
@@ -250,7 +297,12 @@ pay below ~€20,000 is understated. Explained in the Italy note.
 - UI language: Portuguese (pt-PT) is the main language. English is optional (v2).
   From Phase 1, all UI strings live in one place so English can be added without
   touching components.
-- Total employer cost: v2.
+- Total employer cost (Phase 9): statutory contributions only. Rates that vary by sector,
+  company size or insurer use a stated reference case: ES and FR office work-accident
+  rates; FR under 11 employees; DE over 30 employees with the TK U2 rate; NL small
+  employer with the average Whk; IT commerce up to 50 employees, with TFR. Insurance
+  without an official reference rate (PT work accidents, DE Berufsgenossenschaft,
+  IT INAIL) is left out and named in the notes.
 - Cost-of-living adjustment: out of scope (not in v1 or v2).
 - Taxpayer profiles (v2): single without children (current), married with 1 child,
   married with 2 children. Married profiles take the household's gross salary and

@@ -13,14 +13,25 @@ export const step = {
   subtotal: makeStep('subtotal'),
 }
 
-/** Replays the steps; tax and contributions never go below zero. */
-export function sectionTotal(section: TaxSection): number {
-  const total = section.steps.reduce((running, { operation, amount }) => {
+/** Replays the steps from zero; tax and contributions never go below zero. */
+export function stepsTotal(steps: readonly TraceStep[]): number {
+  const total = steps.reduce((running, { operation, amount }) => {
     if (operation === 'add') return running + amount
     if (operation === 'subtract') return running - amount
     return amount
   }, 0)
   return Math.max(total, 0)
+}
+
+export function sectionTotal(section: TaxSection): number {
+  return stepsTotal(section.steps)
+}
+
+/** Additions and deductions of zero say nothing, so they are not shown. */
+export function withoutZeroChanges(steps: readonly TraceStep[]): TraceStep[] {
+  return steps.filter(
+    ({ operation, amount }) => amount !== 0 || operation === 'base' || operation === 'subtotal',
+  )
 }
 
 /**
@@ -30,10 +41,5 @@ export function sectionTotal(section: TaxSection): number {
 export function getVisibleTrace(result: SalaryResult): TaxSection[] {
   return result.trace
     .filter(({ part }) => part !== 'otherTaxes' || result.otherTaxes > 0)
-    .map((section) => ({
-      ...section,
-      steps: section.steps.filter(
-        ({ operation, amount }) => amount !== 0 || operation === 'base' || operation === 'subtotal',
-      ),
-    }))
+    .map((section) => ({ ...section, steps: withoutZeroChanges(section.steps) }))
 }

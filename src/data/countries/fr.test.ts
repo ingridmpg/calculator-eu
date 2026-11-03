@@ -21,6 +21,18 @@ describe('France 2026', () => {
     expect(result.net).toBeCloseTo(41_148.8, 2)
   })
 
+  // Employer cost matches the Urssaf simulator (mon-entreprise) for a company with 5
+  // employees, the administrative work-accident rate and no mutuelle.
+  it('employer cost, with the general reduction below 3 minimum wages', () => {
+    expect(calculateSalary(30_000, france).employerCost).toBeCloseTo(37_279.8, 2)
+    expect(calculateSalary(60_000, france).employerCost).toBeCloseTo(83_680.85, 2)
+  })
+
+  it('employer cost without the general reduction, and at its maximum', () => {
+    expect(calculateSalary(80_000, france).employerCost).toBeCloseTo(113_304.05, 2)
+    expect(calculateSalary(20_000, france).employerCost).toBeCloseTo(20_329.2, 2)
+  })
+
   it('€20,000 gross pays no income tax thanks to the décote', () => {
     expect(calculateSalary(20_000, france).incomeTax).toBe(0)
   })

@@ -1,6 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
 
 // Germany, tax year 2026: annual income tax assessment (Veranlagung) for a single,
 // childless employee aged 23+ with statutory health insurance and no church tax.
@@ -16,6 +16,19 @@ const UNEMPLOYMENT_RATE = 0.013
 const HEALTH_RATE = 0.073 + 0.0145
 /** 1.8% + 0.6% surcharge for childless people aged 23 and over. */
 const LONG_TERM_CARE_RATE = 0.018 + 0.006
+
+/**
+ * Employer shares 2026: the same pension, unemployment and health rates as the employee,
+ * and 1.8% long-term care (no childless surcharge for the employer).
+ */
+const EMPLOYER_LONG_TERM_CARE_RATE = 0.018
+
+/**
+ * Employer-only levies on pay up to the pension ceiling: U2 maternity 0.44% (Techniker
+ * Krankenkasse, as a reference; it varies by fund) and U3 Insolvenzgeld 0.15%.
+ * U1 (sick pay) only applies to employers with up to 30 employees, so it is left out.
+ */
+const EMPLOYER_LEVIES_RATE = 0.0044 + 0.0015
 
 /** §9a EStG Arbeitnehmer-Pauschbetrag and §10c EStG Sonderausgaben-Pauschbetrag. */
 const EMPLOYEE_ALLOWANCE = 1_230
@@ -121,6 +134,25 @@ function computeTaxes(gross: number): TaxSection[] {
   ]
 }
 
+function computeEmployerContributions(gross: number): TraceStep[] {
+  const contributions =
+    cappedContribution(gross, PENSION_RATE + UNEMPLOYMENT_RATE, PENSION_CONTRIBUTION_CEILING) +
+    cappedContribution(
+      gross,
+      HEALTH_RATE + EMPLOYER_LONG_TERM_CARE_RATE,
+      HEALTH_CONTRIBUTION_CEILING,
+    )
+
+  return [
+    step.add('employerContribution', contributions),
+    step.add(
+      'employerLevies',
+      cappedContribution(gross, EMPLOYER_LEVIES_RATE, PENSION_CONTRIBUTION_CEILING),
+      EMPLOYER_LEVIES_RATE,
+    ),
+  ]
+}
+
 export const germany: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -144,10 +176,18 @@ export const germany: CountryTaxModel = {
       label: 'Sozialversicherungsbeiträge und Beitragsbemessungsgrenzen 2026 (lohn-info.de)',
       url: 'https://www.lohn-info.de/sozialversicherungsbeitraege2026.html',
     },
+    {
+      id: 'employerLevies',
+      label: 'Beitragssätze und Umlagen 2026 (Techniker Krankenkasse)',
+      url: 'https://www.tk.de/firmenkunden/versicherung/beitraege-faq-und-mehr/beitragssaetze/aktuelle-beitragssaetze-in-der-sozialversicherung-2031554',
+    },
   ],
   notes: [
     { id: 'careInsurance', kind: 'included', sourceIds: ['socialInsurance'] },
     { id: 'annualTax', kind: 'included', sourceIds: ['tariff'] },
+    { id: 'employerCost', kind: 'included', sourceIds: ['socialInsurance', 'employerLevies'] },
+    { id: 'accidentInsurance', kind: 'excluded', sourceIds: [] },
   ],
   computeTaxes,
+  computeEmployerContributions,
 }

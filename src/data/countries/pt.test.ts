@@ -44,4 +44,10 @@ describe('Portugal 2026', () => {
     expect(result.net).toBe(0)
     expect(result.effectiveRate).toBe(0)
   })
+
+  // simula.pt uses the same 23.75% on gross (it also adds insurance and meal allowance).
+  it('employer pays 23.75% on top of gross, with no ceiling', () => {
+    expect(calculateSalary(30_000, portugal).employerCost).toBeCloseTo(37_125, 2)
+    expect(calculateSalary(60_000, portugal).employerContributions).toBeCloseTo(14_250, 2)
+  })
 })

@@ -13,6 +13,7 @@ const model: CountryTaxModel = {
     { id: 'includedNote', kind: 'included', sourceIds: ['b'] },
   ],
   computeTaxes: () => [],
+  computeEmployerContributions: () => [],
 }
 
 describe('groupNotes', () => {

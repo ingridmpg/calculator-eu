@@ -1,7 +1,7 @@
 import { strings } from '../i18n/index.ts'
 import { formatCurrency, formatRate } from '../lib/format.ts'
-import { getVisibleTrace } from '../lib/trace.ts'
-import type { SalaryResult, TaxSection, TraceOperation, TraceStep } from '../lib/types.ts'
+import { getVisibleTrace, step, withoutZeroChanges } from '../lib/trace.ts'
+import type { SalaryResult, TaxPartKey, TraceOperation, TraceStep } from '../lib/types.ts'
 import { Disclosure } from './Disclosure.tsx'
 import { PartSwatch } from './PartSwatch.tsx'
 import styles from './CalculationTrace.module.css'
@@ -18,38 +18,56 @@ interface CalculationTraceProps {
 }
 
 export function CalculationTrace({ result }: CalculationTraceProps) {
+  const t = strings.trace
+
   return (
-    <Disclosure title={strings.trace.title}>
-      {getVisibleTrace(result).map((section) => (
-        <TraceSectionList key={section.part} section={section} total={result[section.part]} />
+    <Disclosure title={t.title}>
+      {getVisibleTrace(result).map(({ part, steps }) => (
+        <TraceList
+          key={part}
+          title={strings.breakdown[part]}
+          part={part}
+          steps={steps}
+          total={result[part]}
+          totalLabel={t.total}
+        />
       ))}
+
+      <TraceList
+        title={t.employerTitle}
+        steps={[step.base('gross', result.gross), ...withoutZeroChanges(result.employerTrace)]}
+        total={result.employerCost}
+        totalLabel={t.employerTotal}
+      />
     </Disclosure>
   )
 }
 
-interface TraceSectionListProps {
-  section: TaxSection
+interface TraceListProps {
+  title: string
+  /** The salary part the list explains, for its colour; none for the employer cost. */
+  part?: TaxPartKey
+  steps: readonly TraceStep[]
   total: number
+  totalLabel: string
 }
 
-function TraceSectionList({ section, total }: TraceSectionListProps) {
-  const { part, steps } = section
-
+function TraceList({ title, part, steps, total, totalLabel }: TraceListProps) {
   return (
     <section className={styles.section}>
       <h3 className={styles.title}>
-        <PartSwatch part={part} />
-        {strings.breakdown[part]}
+        {part && <PartSwatch part={part} />}
+        {title}
       </h3>
 
       <dl className={styles.list}>
         {steps.map((traceStep, index) => (
           <StepRow key={`${traceStep.key}-${index}`} traceStep={traceStep} />
         ))}
-        {/* A section that ends on a new amount (e.g. tax from the scale) needs no total row. */}
+        {/* A list that ends on a new amount (e.g. tax from the scale) needs no total row. */}
         {steps.at(-1)?.operation !== 'base' && (
           <div className={styles.row} data-total="true">
-            <dt>{strings.trace.total}</dt>
+            <dt>{totalLabel}</dt>
             <dd className={styles.amount}>{formatCurrency(total)}</dd>
           </div>
         )}

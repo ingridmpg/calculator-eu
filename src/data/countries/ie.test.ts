@@ -28,6 +28,17 @@ describe('Ireland 2026', () => {
     expect(prsi).toBeCloseTo(expected, 2)
   })
 
+  it('employer PRSI on all pay, at the standard rate above €552 a week', () => {
+    // 30 000 × (9/12 × 11,25% + 3/12 × 11,40%); Saffery: 40 000 × 11,25% = 4500 before October
+    expect(calculateSalary(30_000, ireland).employerContributions).toBeCloseTo(3_386.25, 2)
+    expect(calculateSalary(60_000, ireland).employerCost).toBeCloseTo(66_772.5, 2)
+  })
+
+  it('employer PRSI at the reduced rate up to €552 a week', () => {
+    // 25 000 / 52 = 480,77 a week: 25 000 × (9/12 × 9% + 3/12 × 9,15%)
+    expect(calculateSalary(25_000, ireland).employerContributions).toBeCloseTo(2_259.375, 2)
+  })
+
   it('charges no USC or PRSI on €13,000 or less', () => {
     const result = calculateSalary(13_000, ireland)
     expect(result.otherTaxes).toBe(0)

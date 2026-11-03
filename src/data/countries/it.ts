@@ -1,6 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
 
 // Italy, tax year 2026: private-sector employee first insured after 1995, living in
 // Milan (Lombardia regional + Milan municipal surcharges).
@@ -21,6 +21,17 @@ const INPS_BRACKETS: readonly TaxBracket[] = [
   { upTo: INPS_CEILING, rate: INPS_RATE + INPS_EXTRA_RATE },
   { upTo: Infinity, rate: 0 },
 ]
+
+/**
+ * Employer INPS share for commerce / services companies with up to 50 employees: 28.98%
+ * in total. Of this, IVS (pension, 23.81%) stops at the INPS ceiling; the rest (NASpI,
+ * family allowances, sickness, maternity, guarantee funds) applies to the whole salary.
+ */
+const EMPLOYER_PENSION_RATE = 0.2381
+const EMPLOYER_OTHER_INPS_RATE = 0.2898 - EMPLOYER_PENSION_RATE
+
+/** TFR (severance pay, c.c. art. 2120): pay / 13.5, less the 0.50% paid to INPS. */
+const SEVERANCE_PAY_RATE = 1 / 13.5 - 0.005
 
 /** TUIR art. 11 as amended by the Legge di Bilancio 2026 (second rate 35% → 33%). */
 const IRPEF_BRACKETS: readonly TaxBracket[] = [
@@ -91,6 +102,15 @@ function computeTaxes(gross: number): TaxSection[] {
   ]
 }
 
+function computeEmployerContributions(gross: number): TraceStep[] {
+  const inps =
+    Math.min(gross, INPS_CEILING) * EMPLOYER_PENSION_RATE + gross * EMPLOYER_OTHER_INPS_RATE
+  return [
+    step.add('employerContribution', inps),
+    step.add('severancePay', gross * SEVERANCE_PAY_RATE, SEVERANCE_PAY_RATE),
+  ]
+}
+
 export const italy: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -119,10 +139,23 @@ export const italy: CountryTaxModel = {
       label: 'Addizionale comunale IRPEF Milano (MEF)',
       url: 'https://www1.finanze.gov.it/finanze2/dipartimentopolitichefiscali/fiscalitalocale/nuova_addcomirpef/risultato.htm?anno=9999&lista=1&pagina=lombardia.htm&cm=&pr=MI&cc=F205&r=1',
     },
+    {
+      id: 'employerInps',
+      label: 'Aliquote contributive commercio fino a 50 dipendenti (Kitech)',
+      url: 'https://www.kitech.it/Contributi-previdenziali.aspx?p=4_138',
+    },
+    {
+      id: 'employerCostExample',
+      label: 'Costo aziendale dipendente 2026 (Numica)',
+      url: 'https://www.numica.it/calcolatori/costo-aziendale',
+    },
   ],
   notes: [
     { id: 'referenceCity', kind: 'included', sourceIds: ['lombardia', 'milan'] },
+    { id: 'employerCost', kind: 'included', sourceIds: ['employerInps', 'employerCostExample'] },
+    { id: 'workAccidentInsurance', kind: 'excluded', sourceIds: [] },
     { id: 'cashSupplements', kind: 'excluded', sourceIds: ['wedgeCredit'] },
   ],
   computeTaxes,
+  computeEmployerContributions,
 }

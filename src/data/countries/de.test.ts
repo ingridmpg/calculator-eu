@@ -33,6 +33,16 @@ describe('Germany 2026', () => {
     expect(calculateSalary(150_000, germany).otherTaxes).toBeGreaterThan(0)
   })
 
+  it('employer cost: social insurance shares plus the U2 and U3 levies', () => {
+    // 9,3% + 1,3% + 8,75% + 1,8% + 0,59% = 21,74%
+    expect(calculateSalary(30_000, germany).employerCost).toBeCloseTo(36_522, 2)
+    // deutschland-rechner.de: €58,224 without U2, plus 0,44% × 48 000
+    expect(calculateSalary(48_000, germany).employerCost).toBeCloseTo(58_435.2, 2)
+    expect(calculateSalary(60_000, germany).employerContributions).toBeCloseTo(13_044, 2)
+    // 101 400 × 11,19% + 69 750 × 10,55%
+    expect(calculateSalary(120_000, germany).employerContributions).toBeCloseTo(18_705.285, 2)
+  })
+
   it('pays no income tax below the basic allowance', () => {
     expect(calculateSalary(14_000, germany).incomeTax).toBe(0)
   })

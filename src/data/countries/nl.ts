@@ -1,6 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
 
 // Netherlands, tax year 2026: box 1 for an employee under AOW age, no pension
 // contributions (they depend on the employer's scheme) and no deductions.
@@ -14,6 +14,19 @@ const BOX_1_BRACKETS: readonly TaxBracket[] = [
   { upTo: 78_426, rate: 0.3756 },
   { upTo: Infinity, rate: 0.495 },
 ]
+
+/** Maximum premieloon 2026 for employee insurance and the Zvw (Staatscourant 2025, 42324). */
+const MAXIMUM_PREMIUM_WAGE = 79_409
+
+/**
+ * Employer premiums 2026: WW (Awf) low rate 2.74% for a permanent contract, Aof 6.27%
+ * for a small employer + 0.50% childcare surcharge, and Whk 1.52% (the average rate;
+ * the real one is set per employer).
+ */
+const EMPLOYER_INSURANCE_RATE = 0.0274 + 0.0627 + 0.005 + 0.0152
+
+/** Zvw werkgeversheffing 2026. */
+const EMPLOYER_HEALTH_RATE = 0.061
 
 /** Algemene heffingskorting 2026: full up to €29,736, then reduced by 6.398%. */
 const GENERAL_CREDIT_MAX = 3_115
@@ -50,6 +63,14 @@ function computeTaxes(gross: number): TaxSection[] {
   ]
 }
 
+function computeEmployerContributions(gross: number): TraceStep[] {
+  const premiumWage = Math.min(gross, MAXIMUM_PREMIUM_WAGE)
+  return [
+    step.add('employerContribution', premiumWage * EMPLOYER_INSURANCE_RATE, EMPLOYER_INSURANCE_RATE),
+    step.add('healthInsurance', premiumWage * EMPLOYER_HEALTH_RATE, EMPLOYER_HEALTH_RATE),
+  ]
+}
+
 export const netherlands: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -58,10 +79,27 @@ export const netherlands: CountryTaxModel = {
       label: 'Voorlopige aanslag 2026: tarieven en heffingskortingen (Belastingdienst)',
       url: 'https://www.belastingdienst.nl/wps/wcm/connect/nl/voorlopige-aanslag/content/voorlopige-aanslag-tarieven-en-heffingskortingen',
     },
+    {
+      id: 'employerPremiums',
+      label: 'Premiepercentages werknemersverzekeringen 2026 (Staatscourant 2025, 42324)',
+      url: 'https://zoek.officielebekendmakingen.nl/stcrt-2025-42324.html',
+    },
+    {
+      id: 'averageWhk',
+      label: 'Definitieve sociale premies 2026 (Rendement)',
+      url: 'https://www.rendement.nl/sociale-verzekeringen/nieuws/definitieve-sociale-premies-2026-zijn-bekend.html',
+    },
+    {
+      id: 'zvw',
+      label: 'Percentages Zvw 2026 (Belastingdienst)',
+      url: 'https://www.belastingdienst.nl/wps/wcm/connect/bldcontentnl/belastingdienst/prive/werk_en_inkomen/zorgverzekeringswet/veranderingen-bijdrage-zvw/percentages-zvw',
+    },
   ],
   notes: [
     { id: 'nationalInsurance', kind: 'included', sourceIds: ['belastingdienst'] },
+    { id: 'employerCost', kind: 'included', sourceIds: ['employerPremiums', 'averageWhk', 'zvw'] },
     { id: 'companyPension', kind: 'excluded', sourceIds: [] },
   ],
   computeTaxes,
+  computeEmployerContributions,
 }

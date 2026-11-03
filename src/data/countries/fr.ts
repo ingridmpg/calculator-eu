@@ -1,6 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
 
 // France: single employee (non-cadre), one tax part (1 part de quotient familial).
 // Social contributions use 2026 rates. Income tax uses the latest published scale,
@@ -23,8 +23,48 @@ const CAPPED_PENSION_BRACKETS: readonly TaxBracket[] = [
 /** Basic pension, uncapped part (vieillesse déplafonnée). */
 const UNCAPPED_PENSION_RATE = 0.004
 
-/** AGIRC-ARRCO CET: on the whole salary up to 8 PASS, only for salaries above 1 PASS. */
+/** AGIRC-ARRCO CET, employee share. */
 const CET_RATE = 0.0014
+
+/**
+ * Employer contributions that depend on the PASS: basic pension 8.55%, AGIRC-ARRCO 4.72%,
+ * CEG 1.29% and FNAL 0.10% (under 50 employees) up to 1 PASS; AGIRC-ARRCO 12.95% and
+ * CEG 1.62% from 1 to 8 PASS.
+ */
+const EMPLOYER_CAPPED_BRACKETS: readonly TaxBracket[] = [
+  { upTo: PASS, rate: 0.0855 + 0.0472 + 0.0129 + 0.001 },
+  { upTo: 8 * PASS, rate: 0.1295 + 0.0162 },
+  { upTo: Infinity, rate: 0 },
+]
+
+/**
+ * Employer contributions on the whole salary: health 13%, basic pension (uncapped) 2.11%,
+ * family allowances 5.25%, CSA 0.30% and dialogue social 0.016%.
+ */
+const EMPLOYER_UNCAPPED_RATE = 0.13 + 0.0211 + 0.0525 + 0.003 + 0.00016
+
+/** Unemployment insurance 4% + AGS 0.25%, up to 4 PASS. */
+const EMPLOYER_UNEMPLOYMENT_RATE = 0.04 + 0.0025
+
+/** AGIRC-ARRCO CET, employer share: same base as the employee CET. */
+const EMPLOYER_CET_RATE = 0.0021
+
+/** Work accidents: rate for administrative support staff (arrêté of 30/12/2025, code 00.00B). */
+const WORK_ACCIDENT_RATE = 0.0064
+
+/** Formation professionnelle 0.55% (under 11 employees) + taxe d'apprentissage 0.68%. */
+const TRAINING_LEVIES_RATE = 0.0055 + 0.0068
+
+/**
+ * Réduction générale dégressive unique (CSS art. L241-13), under 50 employees: it falls
+ * from 39.81% of pay at the minimum wage to 2% just below 3 times the minimum wage, and
+ * stops there. The minimum wage stays at its 1 January 2026 value (€12.02 × 1,820 hours).
+ */
+const ANNUAL_MINIMUM_WAGE = 21_876.4
+const GENERAL_REDUCTION_LIMIT = 3 * ANNUAL_MINIMUM_WAGE
+const GENERAL_REDUCTION_MIN = 0.02
+const GENERAL_REDUCTION_DELTA = 0.3781
+const GENERAL_REDUCTION_EXPONENT = 1.75
 
 /** CSG and CRDS are charged on 98.25% of salary up to 4 PASS, and on 100% above. */
 const CSG_CRDS_BASE_BRACKETS: readonly TaxBracket[] = [
@@ -67,9 +107,14 @@ const HIGH_INCOME_BRACKETS: readonly TaxBracket[] = [
   { upTo: Infinity, rate: 0.04 },
 ]
 
+/** CET base: the whole salary up to 8 PASS, only for salaries above 1 PASS. */
+function cetBase(gross: number): number {
+  return gross > PASS ? Math.min(gross, 8 * PASS) : 0
+}
+
 function socialContributions(gross: number) {
   const csgCrdsBase = progressiveTax(gross, CSG_CRDS_BASE_BRACKETS)
-  const cet = gross > PASS ? Math.min(gross, 8 * PASS) * CET_RATE : 0
+  const cet = cetBase(gross) * CET_RATE
 
   const pension = progressiveTax(gross, CAPPED_PENSION_BRACKETS) + gross * UNCAPPED_PENSION_RATE + cet
   const deductibleCsg = csgCrdsBase * CSG_DEDUCTIBLE_RATE
@@ -123,6 +168,33 @@ function computeTaxes(gross: number): TaxSection[] {
   ]
 }
 
+/** Coefficient rounded to 4 decimals, as the law requires, and never above its maximum. */
+function generalReductionRate(gross: number): number {
+  if (gross <= 0 || gross >= GENERAL_REDUCTION_LIMIT) return 0
+  const ratio = (GENERAL_REDUCTION_LIMIT / gross - 1) / 2
+  const rate = Math.min(
+    GENERAL_REDUCTION_MIN + GENERAL_REDUCTION_DELTA * ratio ** GENERAL_REDUCTION_EXPONENT,
+    GENERAL_REDUCTION_MIN + GENERAL_REDUCTION_DELTA,
+  )
+  return Math.round(rate * 10_000) / 10_000
+}
+
+function computeEmployerContributions(gross: number): TraceStep[] {
+  const contributions =
+    progressiveTax(gross, EMPLOYER_CAPPED_BRACKETS) +
+    gross * EMPLOYER_UNCAPPED_RATE +
+    Math.min(gross, 4 * PASS) * EMPLOYER_UNEMPLOYMENT_RATE +
+    cetBase(gross) * EMPLOYER_CET_RATE
+  const reductionRate = generalReductionRate(gross)
+
+  return [
+    step.add('employerContribution', contributions),
+    step.add('workAccidentInsurance', gross * WORK_ACCIDENT_RATE, WORK_ACCIDENT_RATE),
+    step.add('trainingLevies', gross * TRAINING_LEVIES_RATE, TRAINING_LEVIES_RATE),
+    step.subtract('generalReduction', gross * reductionRate, reductionRate),
+  ]
+}
+
 export const france: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -142,6 +214,21 @@ export const france: CountryTaxModel = {
       url: 'https://www.legisocial.fr/reperes-sociaux/plafond-securite-sociale-2026.html',
     },
     {
+      id: 'generalReduction',
+      label: 'Réduction générale dégressive unique 2026 (Service Public)',
+      url: 'https://entreprendre.service-public.gouv.fr/vosdroits/F24542',
+    },
+    {
+      id: 'workAccidentRates',
+      label: 'Arrêté du 30 décembre 2025 — tarification AT/MP 2026 (Légifrance)',
+      url: 'https://www.legifrance.gouv.fr/jorf/id/JORFTEXT000053228984',
+    },
+    {
+      id: 'employerSimulator',
+      label: 'Simulateur de coût d’embauche (Urssaf)',
+      url: 'https://mon-entreprise.urssaf.fr/simulateurs/salaire-brut-net',
+    },
+    {
       id: 'decote',
       label: 'Décote et abattement de 10 % 2026 (Legifiscal)',
       url: 'https://www.legifiscal.fr/actualites-fiscales/4474-ir-bareme-2026-quotient-familial-decote.html',
@@ -150,7 +237,14 @@ export const france: CountryTaxModel = {
   notes: [
     { id: 'nonExecutive', kind: 'included', sourceIds: ['urssaf'] },
     { id: 'taxScaleYear', kind: 'included', sourceIds: ['incomeTaxScale'] },
+    {
+      id: 'employerCost',
+      kind: 'included',
+      sourceIds: ['urssaf', 'generalReduction', 'workAccidentRates', 'employerSimulator'],
+    },
     { id: 'companyInsurance', kind: 'excluded', sourceIds: [] },
+    { id: 'mobilityLevy', kind: 'excluded', sourceIds: ['urssaf'] },
   ],
   computeTaxes,
+  computeEmployerContributions,
 }

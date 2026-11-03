@@ -1,6 +1,6 @@
 import { progressiveTax } from '../../lib/tax.ts'
 import { step } from '../../lib/trace.ts'
-import type { CountryTaxModel, TaxBracket, TaxSection } from '../../lib/types.ts'
+import type { CountryTaxModel, TaxBracket, TaxSection, TraceStep } from '../../lib/types.ts'
 
 // Portugal, tax year 2026: annual IRS settlement for a single employee (Category A).
 //
@@ -13,6 +13,9 @@ const IAS = 537.13
 
 /** Employee social security contribution (TSU), no ceiling. */
 const SOCIAL_SECURITY_RATE = 0.11
+
+/** Employer social security contribution (Código Contributivo art. 53), no ceiling. */
+const EMPLOYER_SOCIAL_SECURITY_RATE = 0.2375
 
 /** CIRS art. 25: 8.54 × IAS, or the social security paid if higher. */
 const MIN_SPECIFIC_DEDUCTION = 4_587.09
@@ -96,6 +99,11 @@ function computeTaxes(gross: number): TaxSection[] {
   ]
 }
 
+function computeEmployerContributions(gross: number): TraceStep[] {
+  const contribution = gross * EMPLOYER_SOCIAL_SECURITY_RATE
+  return [step.add('employerContribution', contribution, EMPLOYER_SOCIAL_SECURITY_RATE)]
+}
+
 export const portugal: CountryTaxModel = {
   year: 2026,
   sources: [
@@ -124,11 +132,24 @@ export const portugal: CountryTaxModel = {
       label: 'Dedução específica 2026: 4 587,09 € (CGD Saldo Positivo)',
       url: 'https://www.cgd.pt/Site/Saldo-Positivo/leis-e-impostos/Pages/novidades-IRS.aspx',
     },
+    {
+      id: 'contributiveCode',
+      label: 'Código Contributivo — taxas do regime geral (Segurança Social)',
+      url: 'https://seg-social.pt/documents/10152/15009350/C%c3%b3digo_Contributivo/1e56fad5-0e2a-42c2-b94c-194c4aa64f74',
+    },
+    {
+      id: 'compensationFunds',
+      label: 'FCT e FGCT: extinção e suspensão das contribuições (PLMJ)',
+      url: 'https://www.plmj.com/xms/files/03_Novidades_legislativas/2023/dezembro/FCT_e_FGCT.pdf',
+    },
   ],
   notes: [
     { id: 'deductionsIncluded', kind: 'included', sourceIds: ['cirs70', 'cirs78b'] },
     { id: 'otherDeductions', kind: 'excluded', sourceIds: [] },
+    { id: 'employerCost', kind: 'included', sourceIds: ['contributiveCode', 'compensationFunds'] },
+    { id: 'workAccidentInsurance', kind: 'excluded', sourceIds: [] },
     { id: 'rateCut', kind: 'pending', sourceIds: ['cirs68'] },
   ],
   computeTaxes,
+  computeEmployerContributions,
 }
